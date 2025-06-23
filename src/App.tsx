@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import {} from './firebase'
 
 // Pages
 import Landing from "./pages/Landing";
@@ -23,8 +23,17 @@ import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
+import Signup from './pages/Signup';
+import CreateSampleClasses from './components/CreateSampleClasses';
+import BookClass from './components/BookClass';
+import BookingRequests from './components/BookingRequests';
 
 const queryClient = new QueryClient();
+
+type ProtectedRouteProps = {
+  allowedRoles: string[];
+  children: ReactNode;
+};
 
 const App: React.FC = () => {
   return (
@@ -38,9 +47,27 @@ const App: React.FC = () => {
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Signup />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
+              <Route path="/create-classes" element={<CreateSampleClasses />} />
+              <Route path="/book-class" element={<BookClass />} />
+
+
 
               {/* Protected Routes - Admin Only */}
+
+              {/* <Route path="/book-class" element={
+  <ProtectedRoute allowedRoles={['customer']}>
+    <BookClass />
+  </ProtectedRoute>
+} /> */}
+
+<Route path="/booking-requests" element={
+  <ProtectedRoute allowedRoles={['admin', 'manager']}>
+    <BookingRequests />
+  </ProtectedRoute>
+} />
+
               <Route path="/admin" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminDashboard />

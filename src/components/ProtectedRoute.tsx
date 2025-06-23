@@ -1,25 +1,25 @@
-
-import React from 'react';
-import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { Navigate } from 'react-router-dom';
+import React, { ReactNode } from 'react';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  allowedRoles?: string[];
+  allowedRoles: string[];
+  children: ReactNode;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user } = useAuth();
+const ProtectedRoute = ({ allowedRoles, children }: ProtectedRouteProps) => {
+  const { user, isAuthenticated, loading } = useAuth();
 
-  if (!isAuthenticated) {
+  if (loading) {
+    return <div className="p-6 text-center text-gray-500">Checking authentication...</div>;
+  }
+
+  if (!user || !allowedRoles.includes(user.role)) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  return <>{children}</>;
+  return <>{children}</>; //  render passed-in children
 };
 
 export default ProtectedRoute;
+   

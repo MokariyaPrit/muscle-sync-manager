@@ -4,7 +4,7 @@ import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { Dashboard } from '@/components/Dashboard';
 import { UserManagement } from '@/components/UserManagement';
-import { BookingRequests } from '@/components/BookingRequests';
+// import { BookingRequests } from '@/components/BookingRequests';
 
 const AdminDashboard = () => {
   return (
@@ -23,7 +23,7 @@ const AdminDashboard = () => {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <UserManagement />
-              <BookingRequests />
+              {/* <BookingRequests /> */}
             </div>
           </div>
         </main>

@@ -1,77 +1,93 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { auth, db } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface User {
   id: string;
   email: string;
   role: 'admin' | 'manager' | 'customer';
   name: string;
+  region: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role: string) => Promise<void>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
+  loading:boolean;
 }
-
+  
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem('gym_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
+useEffect(() => {
+  const savedUser = localStorage.getItem('gym_user');
+  if (savedUser) {
+    setUser(JSON.parse(savedUser));
+    setIsAuthenticated(true);
+  }
+
+  const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+    if (!firebaseUser) {
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('gym_user');
     }
-  }, []);
+    setLoading(false); // ✅ Done checking auth
+  });
 
-  const login = async (email: string, password: string, role: string) => {
-    // Demo authentication - replace with real API call
-    const demoCredentials = {
-      'admin@fitzone.com': { password: 'admin123', role: 'admin', name: 'Admin User' },
-      'manager@fitzone.com': { password: 'manager123', role: 'manager', name: 'Manager User' },
-      'customer@fitzone.com': { password: 'customer123', role: 'customer', name: 'Customer User' }
-    };
+  return () => unsubscribe();
+}, []);  
 
-    const userCreds = demoCredentials[email as keyof typeof demoCredentials];
-    
-    if (userCreds && userCreds.password === password && userCreds.role === role) {
-      const userData: User = {
-        id: '1',
-        email,
-        role: role as 'admin' | 'manager' | 'customer',
-        name: userCreds.name
+  const login = async (email: string, password: string) => {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      const fullUser: User = {
+        id: user.uid,
+        email: user.email ?? '',
+        role: userData.role,
+        name: userData.name,
+        region: userData.region,
       };
-      
-      setUser(userData);
+      setUser(fullUser);
       setIsAuthenticated(true);
-      localStorage.setItem('gym_user', JSON.stringify(userData));
+      localStorage.setItem('gym_user', JSON.stringify(fullUser));
     } else {
-      throw new Error('Invalid credentials');
+      throw new Error('User data not found in Firestore');
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('gym_user');
-  };
 
+
+const logout = async () => {
+  await signOut(auth);
+  setUser(null);
+  setIsAuthenticated(false);
+  localStorage.removeItem('gym_user');
+};
+  
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
-      {children}
-    </AuthContext.Provider>
+ <AuthContext.Provider value={{ user, login, logout, isAuthenticated, loading }}>
+  {children}
+</AuthContext.Provider>
+
   );
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

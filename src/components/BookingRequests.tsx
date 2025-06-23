@@ -1,72 +1,72 @@
-
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { db } from '@/firebase';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+  doc
+} from 'firebase/firestore';
+import {
+  Card, CardHeader, CardTitle, CardContent
+} from '@/components/ui/card';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Clock } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 
-interface BookingRequest {
+interface Booking {
   id: string;
   memberName: string;
   className: string;
   date: string;
   time: string;
-  status: 'pending' | 'approved' | 'rejected';
   region: string;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
-export const BookingRequests = () => {
+const BookingRequests = () => {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<BookingRequest[]>([
-    {
-      id: '1',
-      memberName: 'John Doe',
-      className: 'Morning Yoga',
-      date: '2024-06-25',
-      time: '07:00',
-      status: 'pending',
-      region: 'North'
-    },
-    {
-      id: '2',
-      memberName: 'Jane Smith',
-      className: 'HIIT Training',
-      date: '2024-06-26',
-      time: '18:00',
-      status: 'pending',
-      region: 'North'
-    },
-    {
-      id: '3',
-      memberName: 'Bob Johnson',
-      className: 'Evening Pilates',
-      date: '2024-06-27',
-      time: '19:00',
-      status: 'approved',
-      region: 'South'
+  const [bookings, setBookings] = useState<Booking[]>([]);
+
+  const fetchBookings = async () => {
+    if (!user) return;
+
+    let q;
+    if (user.role === 'manager') {
+      q = query(
+        collection(db, 'bookings'),
+        where('region', '==', user.region)
+      );
+    } else {
+      q = collection(db, 'bookings');
     }
-  ]);
 
-  // Filter requests based on user role
-  const filteredRequests = user?.role === 'manager' 
-    ? requests.filter(req => req.region === 'North') // Assuming manager handles North region
-    : requests;
+    const snapshot = await getDocs(q);
+    const list: Booking[] = [];
+    snapshot.forEach(docSnap => {
+      list.push({ id: docSnap.id, ...(docSnap.data() as object) } as Booking);
+    });
 
-  const handleApprove = (id: string) => {
-    setRequests(requests.map(req => 
-      req.id === id ? { ...req, status: 'approved' as const } : req
-    ));
+    setBookings(list);
   };
 
-  const handleReject = (id: string) => {
-    setRequests(requests.map(req => 
-      req.id === id ? { ...req, status: 'rejected' as const } : req
-    ));
+  const handleUpdate = async (id: string, status: 'approved' | 'rejected') => {
+    try {
+      await updateDoc(doc(db, 'bookings', id), { status });
+      setBookings(prev =>
+        prev.map(req => req.id === id ? { ...req, status } : req)
+      );
+    } catch (err) {
+      console.error(`Failed to ${status}:`, err);
+    }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: Booking['status']) => {
     switch (status) {
       case 'pending':
         return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
@@ -74,10 +74,12 @@ export const BookingRequests = () => {
         return <Badge className="bg-green-500 hover:bg-green-600"><Check className="w-3 h-3 mr-1" />Approved</Badge>;
       case 'rejected':
         return <Badge variant="destructive"><X className="w-3 h-3 mr-1" />Rejected</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
     }
   };
+
+  useEffect(() => {
+    fetchBookings();
+  }, [user]);
 
   return (
     <Card>
@@ -98,28 +100,28 @@ export const BookingRequests = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRequests.map((request) => (
-              <TableRow key={request.id}>
-                <TableCell>{request.memberName}</TableCell>
-                <TableCell>{request.className}</TableCell>
-                <TableCell>{request.date}</TableCell>
-                <TableCell>{request.time}</TableCell>
-                <TableCell>{request.region}</TableCell>
-                <TableCell>{getStatusBadge(request.status)}</TableCell>
+            {bookings.map(booking => (
+              <TableRow key={booking.id}>
+                <TableCell>{booking.memberName}</TableCell>
+                <TableCell>{booking.className}</TableCell>
+                <TableCell>{booking.date}</TableCell>
+                <TableCell>{booking.time}</TableCell>
+                <TableCell>{booking.region}</TableCell>
+                <TableCell>{getStatusBadge(booking.status)}</TableCell>
                 <TableCell>
-                  {request.status === 'pending' && (
+                  {booking.status === 'pending' && (
                     <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="bg-green-600 hover:bg-green-700"
-                        onClick={() => handleApprove(request.id)}
+                        onClick={() => handleUpdate(booking.id, 'approved')}
                       >
                         <Check className="w-4 h-4" />
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="destructive"
-                        onClick={() => handleReject(request.id)}
+                        onClick={() => handleUpdate(booking.id, 'rejected')}
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -134,3 +136,6 @@ export const BookingRequests = () => {
     </Card>
   );
 };
+
+export default BookingRequests;
+   
