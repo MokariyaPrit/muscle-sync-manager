@@ -3,6 +3,8 @@ import React from 'react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { ClassScheduler } from '@/components/ClassScheduler';
+import { BookingRequests } from '@/components/BookingRequests';
 import { Users, Calendar, TrendingUp, DollarSign } from 'lucide-react';
 
 const ManagerDashboard = () => {
@@ -64,14 +66,10 @@ const ManagerDashboard = () => {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Regional Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Detailed regional analytics and member management tools for your assigned area.</p>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ClassScheduler />
+              <BookingRequests />
+            </div>
           </div>
         </main>
       </div>

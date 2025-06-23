@@ -3,6 +3,8 @@ import React from 'react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { Dashboard } from '@/components/Dashboard';
+import { UserManagement } from '@/components/UserManagement';
+import { BookingRequests } from '@/components/BookingRequests';
 
 const AdminDashboard = () => {
   return (
@@ -11,11 +13,19 @@ const AdminDashboard = () => {
       <div className="flex">
         <Sidebar />
         <main className="flex-1 p-6">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-gray-600">Full system access and management</p>
+          <div className="space-y-6">
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="text-gray-600">Full system access and management</p>
+            </div>
+            
+            <Dashboard />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <UserManagement />
+              <BookingRequests />
+            </div>
           </div>
-          <Dashboard />
         </main>
       </div>
     </div>
