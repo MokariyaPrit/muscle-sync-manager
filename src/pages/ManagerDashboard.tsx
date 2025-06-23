@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ClassScheduler } from '@/components/ClassScheduler';
-// import { BookingRequests } from '@/components/BookingRequests';
+import BookingRequests from '@/components/BookingRequests';
 import { Users, Calendar, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -155,7 +156,7 @@ const ManagerDashboard = () => {
             {/* Additional Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ClassScheduler />
-              {/* <BookingRequests /> */}
+              <BookingRequests />
             </div>
           </div>
         </main>
@@ -165,4 +166,3 @@ const ManagerDashboard = () => {
 };
 
 export default ManagerDashboard;
-   

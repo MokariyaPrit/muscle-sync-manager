@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,82 +7,140 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { db } from '@/firebase';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, where, updateDoc } from 'firebase/firestore';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ClassSchedule {
   id: string;
-  className: string;
+  name: string;
   instructor: string;
-  day: string;
+  date: string;
   time: string;
   duration: string;
   capacity: number;
+  enrolled?: number;
   region: string;
+  createdBy: string;
 }
 
 export const ClassScheduler = () => {
-  const [schedules, setSchedules] = useState<ClassSchedule[]>([
-    {
-      id: '1',
-      className: 'Morning Yoga',
-      instructor: 'Sarah Johnson',
-      day: 'Monday',
-      time: '07:00',
-      duration: '60',
-      capacity: 20,
-      region: 'North'
-    },
-    {
-      id: '2',
-      className: 'HIIT Training',
-      instructor: 'Mike Wilson',
-      day: 'Tuesday',
-      time: '18:00',
-      duration: '45',
-      capacity: 15,
-      region: 'North'
-    }
-  ]);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [schedules, setSchedules] = useState<ClassSchedule[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const [newClass, setNewClass] = useState({
-    className: '',
+    name: '',
     instructor: '',
-    day: '',
+    date: '',
     time: '',
     duration: '',
     capacity: '',
-    region: 'North'
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleAddClass = () => {
-    if (newClass.className && newClass.instructor && newClass.day && newClass.time) {
-      const schedule: ClassSchedule = {
-        id: Date.now().toString(),
-        className: newClass.className,
-        instructor: newClass.instructor,
-        day: newClass.day,
-        time: newClass.time,
-        duration: newClass.duration,
-        capacity: parseInt(newClass.capacity) || 20,
-        region: newClass.region
-      };
-      setSchedules([...schedules, schedule]);
-      setNewClass({
-        className: '',
-        instructor: '',
-        day: '',
-        time: '',
-        duration: '',
-        capacity: '',
-        region: 'North'
+  const fetchClasses = async () => {
+    if (!user) return;
+
+    try {
+      let q;
+      if (user.role === 'manager') {
+        q = query(collection(db, 'classes'), where('region', '==', user.region));
+      } else {
+        q = collection(db, 'classes');
+      }
+
+      const querySnapshot = await getDocs(q);
+      const classList: ClassSchedule[] = [];
+      querySnapshot.forEach((doc) => {
+        classList.push({ id: doc.id, ...doc.data() } as ClassSchedule);
       });
-      setIsDialogOpen(false);
+      setSchedules(classList);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch classes',
+        variant: 'destructive'
+      });
     }
   };
 
-  const handleDeleteClass = (id: string) => {
-    setSchedules(schedules.filter(schedule => schedule.id !== id));
+  useEffect(() => {
+    fetchClasses();
+  }, [user]);
+
+  const handleAddClass = async () => {
+    if (!newClass.name || !newClass.instructor || !newClass.date || !newClass.time || !user) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await addDoc(collection(db, 'classes'), {
+        name: newClass.name,
+        instructor: newClass.instructor,
+        date: newClass.date,
+        time: newClass.time,
+        duration: newClass.duration || '60',
+        capacity: parseInt(newClass.capacity) || 20,
+        enrolled: 0,
+        region: user.region,
+        createdBy: user.email,
+        createdAt: new Date().toISOString()
+      });
+
+      setNewClass({
+        name: '',
+        instructor: '',
+        date: '',
+        time: '',
+        duration: '',
+        capacity: '',
+      });
+      setIsDialogOpen(false);
+      fetchClasses();
+      
+      toast({
+        title: 'Success',
+        description: 'Class added successfully',
+      });
+    } catch (error) {
+      console.error('Error adding class:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add class',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteClass = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'classes', id));
+      fetchClasses();
+      toast({
+        title: 'Success',
+        description: 'Class deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting class:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete class',
+        variant: 'destructive'
+      });
+    }
   };
 
   return (
@@ -103,28 +161,19 @@ export const ClassScheduler = () => {
             <div className="space-y-4">
               <Input
                 placeholder="Class Name"
-                value={newClass.className}
-                onChange={(e) => setNewClass({...newClass, className: e.target.value})}
+                value={newClass.name}
+                onChange={(e) => setNewClass({...newClass, name: e.target.value})}
               />
               <Input
                 placeholder="Instructor"
                 value={newClass.instructor}
                 onChange={(e) => setNewClass({...newClass, instructor: e.target.value})}
               />
-              <Select value={newClass.day} onValueChange={(value) => setNewClass({...newClass, day: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Day" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Monday">Monday</SelectItem>
-                  <SelectItem value="Tuesday">Tuesday</SelectItem>
-                  <SelectItem value="Wednesday">Wednesday</SelectItem>
-                  <SelectItem value="Thursday">Thursday</SelectItem>
-                  <SelectItem value="Friday">Friday</SelectItem>
-                  <SelectItem value="Saturday">Saturday</SelectItem>
-                  <SelectItem value="Sunday">Sunday</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                type="date"
+                value={newClass.date}
+                onChange={(e) => setNewClass({...newClass, date: e.target.value})}
+              />
               <Input
                 type="time"
                 value={newClass.time}
@@ -141,8 +190,8 @@ export const ClassScheduler = () => {
                 value={newClass.capacity}
                 onChange={(e) => setNewClass({...newClass, capacity: e.target.value})}
               />
-              <Button onClick={handleAddClass} className="w-full">
-                Add Class
+              <Button onClick={handleAddClass} disabled={loading} className="w-full">
+                {loading ? 'Adding...' : 'Add Class'}
               </Button>
             </div>
           </DialogContent>
@@ -154,27 +203,26 @@ export const ClassScheduler = () => {
             <TableRow>
               <TableHead>Class Name</TableHead>
               <TableHead>Instructor</TableHead>
-              <TableHead>Day</TableHead>
+              <TableHead>Date</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Duration</TableHead>
               <TableHead>Capacity</TableHead>
+              <TableHead>Enrolled</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {schedules.map((schedule) => (
               <TableRow key={schedule.id}>
-                <TableCell>{schedule.className}</TableCell>
+                <TableCell>{schedule.name}</TableCell>
                 <TableCell>{schedule.instructor}</TableCell>
-                <TableCell>{schedule.day}</TableCell>
+                <TableCell>{schedule.date}</TableCell>
                 <TableCell>{schedule.time}</TableCell>
                 <TableCell>{schedule.duration} min</TableCell>
                 <TableCell>{schedule.capacity}</TableCell>
+                <TableCell>{schedule.enrolled || 0}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Edit className="w-4 h-4" />
-                    </Button>
                     <Button 
                       variant="destructive" 
                       size="sm"

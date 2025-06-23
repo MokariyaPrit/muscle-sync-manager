@@ -1,75 +1,139 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, Users } from 'lucide-react';
+import { db } from '@/firebase';
+import { collection, getDocs, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/use-toast';
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: 'admin' | 'manager' | 'customer';
-  plan: string;
   region: string;
-  status: 'active' | 'inactive';
+  createdAt?: string;
 }
 
 export const UserManagement = () => {
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: '1',
-      name: 'John Manager',
-      email: 'manager@fitzone.com',
-      role: 'manager',
-      plan: 'Premium',
-      region: 'North',
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Jane Customer',
-      email: 'jane@example.com',
-      role: 'customer',
-      plan: 'Basic',
-      region: 'North',
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Bob Smith',
-      email: 'bob@example.com',
-      role: 'customer',
-      plan: 'Premium',
-      region: 'South',
-      status: 'inactive'
-    }
-  ]);
-
+  const { user: currentUser } = useAuth();
+  const { toast } = useToast();
+  const [users, setUsers] = useState<User[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const fetchUsers = async () => {
+    if (!currentUser) return;
+
+    try {
+      let q;
+      if (currentUser.role === 'admin') {
+        q = collection(db, 'users');
+      } else {
+        q = query(collection(db, 'users'), where('region', '==', currentUser.region));
+      }
+
+      const querySnapshot = await getDocs(q);
+      const usersList: User[] = [];
+      querySnapshot.forEach((doc) => {
+        const userData = doc.data();
+        usersList.push({ 
+          id: doc.id, 
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          region: userData.region,
+          createdAt: userData.createdAt
+        } as User);
+      });
+      setUsers(usersList);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch users',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [currentUser]);
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveUser = () => {
-    if (editingUser) {
+  const handleSaveUser = async () => {
+    if (!editingUser) return;
+
+    try {
+      setLoading(true);
+      await updateDoc(doc(db, 'users', editingUser.id), {
+        name: editingUser.name,
+        email: editingUser.email,
+        role: editingUser.role,
+        region: editingUser.region,
+        updatedAt: new Date().toISOString()
+      });
+
       setUsers(users.map(user => 
         user.id === editingUser.id ? editingUser : user
       ));
       setIsEditDialogOpen(false);
       setEditingUser(null);
+      
+      toast({
+        title: 'Success',
+        description: 'User updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update user',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteUser = (id: string) => {
-    setUsers(users.filter(user => user.id !== id));
+  const handleDeleteUser = async (id: string) => {
+    if (id === currentUser?.id) {
+      toast({
+        title: 'Error',
+        description: 'Cannot delete your own account',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'users', id));
+      setUsers(users.filter(user => user.id !== id));
+      toast({
+        title: 'Success',
+        description: 'User deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete user',
+        variant: 'destructive'
+      });
+    }
   };
 
   const getRoleBadge = (role: string) => {
@@ -83,12 +147,6 @@ export const UserManagement = () => {
       default:
         return <Badge variant="secondary">Unknown</Badge>;
     }
-  };
-
-  const getStatusBadge = (status: string) => {
-    return status === 'active' 
-      ? <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
-      : <Badge variant="destructive">Inactive</Badge>;
   };
 
   return (
@@ -106,9 +164,7 @@ export const UserManagement = () => {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Plan</TableHead>
               <TableHead>Region</TableHead>
-              <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -118,9 +174,7 @@ export const UserManagement = () => {
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{getRoleBadge(user.role)}</TableCell>
-                <TableCell>{user.plan}</TableCell>
-                <TableCell>{user.region}</TableCell>
-                <TableCell>{getStatusBadge(user.status)}</TableCell>
+                <TableCell className="capitalize">{user.region}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
                     <Button 
@@ -130,13 +184,15 @@ export const UserManagement = () => {
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => handleDeleteUser(user.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {currentUser?.role === 'admin' && user.id !== currentUser.id && (
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -161,34 +217,23 @@ export const UserManagement = () => {
                   value={editingUser.email}
                   onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
                 />
-                <Select 
-                  value={editingUser.role} 
-                  onValueChange={(value: 'admin' | 'manager' | 'customer') => 
-                    setEditingUser({...editingUser, role: value})
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="customer">Customer</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select 
-                  value={editingUser.plan} 
-                  onValueChange={(value) => setEditingUser({...editingUser, plan: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Plan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Basic">Basic</SelectItem>
-                    <SelectItem value="Premium">Premium</SelectItem>
-                    <SelectItem value="VIP">VIP</SelectItem>
-                  </SelectContent>
-                </Select>
+                {currentUser?.role === 'admin' && (
+                  <Select 
+                    value={editingUser.role} 
+                    onValueChange={(value: 'admin' | 'manager' | 'customer') => 
+                      setEditingUser({...editingUser, role: value})
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="customer">Customer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
                 <Select 
                   value={editingUser.region} 
                   onValueChange={(value) => setEditingUser({...editingUser, region: value})}
@@ -197,28 +242,14 @@ export const UserManagement = () => {
                     <SelectValue placeholder="Select Region" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="North">North</SelectItem>
-                    <SelectItem value="South">South</SelectItem>
-                    <SelectItem value="East">East</SelectItem>
-                    <SelectItem value="West">West</SelectItem>
+                    <SelectItem value="gujarat">Gujarat</SelectItem>
+                    <SelectItem value="maharashtra">Maharashtra</SelectItem>
+                    <SelectItem value="madhya pradesh">Madhya Pradesh</SelectItem>
+                    <SelectItem value="rajasthan">Rajasthan</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select 
-                  value={editingUser.status} 
-                  onValueChange={(value: 'active' | 'inactive') => 
-                    setEditingUser({...editingUser, status: value})
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleSaveUser} className="w-full">
-                  Save Changes
+                <Button onClick={handleSaveUser} disabled={loading} className="w-full">
+                  {loading ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             )}

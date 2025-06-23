@@ -3,7 +3,7 @@ import React from 'react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ClassBooking } from '@/components/ClassBooking';
+import BookClass from '@/components/BookClass';
 import { Calendar, Activity, Target, Award } from 'lucide-react';
 
 const CustomerDashboard = () => {
@@ -65,7 +65,7 @@ const CustomerDashboard = () => {
               </Card>
             </div>
 
-            <ClassBooking />
+            <BookClass />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>

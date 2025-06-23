@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/firebase';
@@ -32,15 +33,24 @@ const BookClass = () => {
     if (!user?.region) return;
 
     const fetchClasses = async () => {
-      const q = query(collection(db, 'classes'), where('region', '==', user.region));
-      const querySnapshot = await getDocs(q);
+      try {
+        const q = query(collection(db, 'classes'), where('region', '==', user.region));
+        const querySnapshot = await getDocs(q);
 
-      const results: ClassItem[] = [];
-      querySnapshot.forEach(doc => {
-        results.push({ id: doc.id, ...doc.data() } as ClassItem);
-      });
+        const results: ClassItem[] = [];
+        querySnapshot.forEach(doc => {
+          results.push({ id: doc.id, ...doc.data() } as ClassItem);
+        });
 
-      setClasses(results);
+        setClasses(results);
+      } catch (error) {
+        console.error('Error fetching classes:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch classes',
+          variant: 'destructive'
+        });
+      }
     };
 
     fetchClasses();
@@ -102,6 +112,7 @@ const BookClass = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Class</TableHead>
+              <TableHead>Instructor</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Availability</TableHead>
@@ -112,6 +123,7 @@ const BookClass = () => {
             {classes.map(cls => (
               <TableRow key={cls.id}>
                 <TableCell className="font-medium">{cls.name}</TableCell>
+                <TableCell>{cls.instructor}</TableCell>
                 <TableCell>{cls.date}</TableCell>
                 <TableCell className="flex items-center">
                   <Clock className="w-4 h-4 mr-1" /> {cls.time}
@@ -145,4 +157,3 @@ const BookClass = () => {
 };
 
 export default BookClass;
-  
