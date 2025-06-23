@@ -2,26 +2,29 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   User, 
   Calendar, 
   Check,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  LayoutDashboard,
+  Users
 } from 'lucide-react';
 
 const menuItems = [
-  { icon: User, label: 'Dashboard', active: true },
-  { icon: User, label: 'Members' },
-  { icon: User, label: 'Staff' },
-  { icon: Calendar, label: 'Attendance' },
-  { icon: Check, label: 'Memberships' },
-  { icon: ArrowUp, label: 'Payments' },
-  { icon: ArrowDown, label: 'Reports' },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: Users, label: 'Members', path: '/members' },
+  { icon: User, label: 'Staff', path: '/staff' },
+  { icon: Calendar, label: 'Attendance', path: '/attendance' },
+  { icon: Check, label: 'Memberships', path: '/memberships' },
+  { icon: ArrowUp, label: 'Payments', path: '/payments' },
+  { icon: ArrowDown, label: 'Reports', path: '/reports' },
 ];
 
 export const Sidebar = () => {
-  const [activeItem, setActiveItem] = useState('Dashboard');
+  const location = useLocation();
 
   return (
     <aside className="w-64 bg-white shadow-sm border-r border-gray-200 h-[calc(100vh-73px)]">
@@ -34,23 +37,23 @@ export const Sidebar = () => {
         
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeItem === item.label;
+          const isActive = location.pathname === item.path;
           
           return (
-            <Button
-              key={item.label}
-              variant="ghost"
-              className={cn(
-                "w-full justify-start space-x-3 h-12 transition-all duration-200",
-                isActive 
-                  ? "bg-gradient-to-r from-blue-500 to-orange-500 text-white shadow-lg hover:from-blue-600 hover:to-orange-600" 
-                  : "hover:bg-gray-100 text-gray-700"
-              )}
-              onClick={() => setActiveItem(item.label)}
-            >
-              <Icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
-            </Button>
+            <Link key={item.path} to={item.path}>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start space-x-3 h-12 transition-all duration-200",
+                  isActive 
+                    ? "bg-gradient-to-r from-blue-500 to-orange-500 text-white shadow-lg hover:from-blue-600 hover:to-orange-600" 
+                    : "hover:bg-gray-100 text-gray-700"
+                )}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </Button>
+            </Link>
           );
         })}
         
