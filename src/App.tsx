@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,82 +26,84 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
+const App: React.FC = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
 
-            {/* Protected Routes - Admin Only */}
-            <Route path="/admin" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <Index />
-              </ProtectedRoute>
-            } />
-            <Route path="/members" element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <Members />
-              </ProtectedRoute>
-            } />
-            <Route path="/staff" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <Staff />
-              </ProtectedRoute>
-            } />
-            <Route path="/attendance" element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <Attendance />
-              </ProtectedRoute>
-            } />
-            <Route path="/memberships" element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <Memberships />
-              </ProtectedRoute>
-            } />
-            <Route path="/payments" element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <Payments />
-              </ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <Reports />
-              </ProtectedRoute>
-            } />
+              {/* Protected Routes - Admin Only */}
+              <Route path="/admin" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Index />
+                </ProtectedRoute>
+              } />
+              <Route path="/members" element={
+                <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                  <Members />
+                </ProtectedRoute>
+              } />
+              <Route path="/staff" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Staff />
+                </ProtectedRoute>
+              } />
+              <Route path="/attendance" element={
+                <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                  <Attendance />
+                </ProtectedRoute>
+              } />
+              <Route path="/memberships" element={
+                <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                  <Memberships />
+                </ProtectedRoute>
+              } />
+              <Route path="/payments" element={
+                <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                  <Payments />
+                </ProtectedRoute>
+              } />
+              <Route path="/reports" element={
+                <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                  <Reports />
+                </ProtectedRoute>
+              } />
 
-            {/* Manager Dashboard */}
-            <Route path="/manager" element={
-              <ProtectedRoute allowedRoles={['manager']}>
-                <ManagerDashboard />
-              </ProtectedRoute>
-            } />
+              {/* Manager Dashboard */}
+              <Route path="/manager" element={
+                <ProtectedRoute allowedRoles={['manager']}>
+                  <ManagerDashboard />
+                </ProtectedRoute>
+              } />
 
-            {/* Customer Dashboard */}
-            <Route path="/customer" element={
-              <ProtectedRoute allowedRoles={['customer']}>
-                <CustomerDashboard />
-              </ProtectedRoute>
-            } />
+              {/* Customer Dashboard */}
+              <Route path="/customer" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <CustomerDashboard />
+                </ProtectedRoute>
+              } />
 
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+              {/* Catch-all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
