@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowUp, ArrowDown, User } from 'lucide-react';
+import { ArrowUp, ArrowDown, User, Check } from 'lucide-react';
 
 const stats = [
   {
