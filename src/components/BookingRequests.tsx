@@ -53,7 +53,14 @@ const BookingRequests = () => {
       const snapshot = await getDocs(q);
       const list: Booking[] = [];
       snapshot.forEach(docSnap => {
-        const data = docSnap.data();
+        const data = docSnap.data() as {
+          memberName?: string;
+          className?: string;
+          date?: string;
+          time?: string;
+          region?: string;
+          status?: 'pending' | 'approved' | 'rejected';
+        };
         list.push({ 
           id: docSnap.id, 
           memberName: data.memberName || '',
@@ -112,7 +119,7 @@ const BookingRequests = () => {
   }, [user]);
 
   return (
-    <Card className="h-[600px]">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center">
           <Calendar className="w-5 h-5 mr-2" />

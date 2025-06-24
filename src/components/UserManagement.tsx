@@ -43,10 +43,16 @@ export const UserManagement = () => {
 
       const querySnapshot = await getDocs(q);
       const usersList: User[] = [];
-      querySnapshot.forEach((doc) => {
-        const userData = doc.data();
+      querySnapshot.forEach((docSnap) => {
+        const userData = docSnap.data() as {
+          name?: string;
+          email?: string;
+          role?: 'admin' | 'manager' | 'customer';
+          region?: string;
+          createdAt?: string;
+        };
         usersList.push({ 
-          id: doc.id, 
+          id: docSnap.id, 
           name: userData.name || '',
           email: userData.email || '',
           role: userData.role || 'customer',
@@ -150,7 +156,7 @@ export const UserManagement = () => {
   };
 
   return (
-    <Card className="h-[600px]">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center">
           <Users className="w-5 h-5 mr-2" />
