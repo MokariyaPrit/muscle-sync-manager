@@ -50,7 +50,17 @@ const BookClass = () => {
       const snapshot = await getDocs(q);
       const classList: ClassItem[] = [];
       snapshot.forEach(doc => {
-        classList.push({ id: doc.id, ...doc.data() } as ClassItem);
+       const data = doc.data();
+    classList.push({
+  id: doc.id,
+  name: data.name,
+  instructor: data.instructor,
+  date: data.date?.toDate?.().toLocaleDateString() ?? '',
+  time: data.time,
+  region: data.region,
+  capacity: data.capacity
+    });
+
       });
       setClasses(classList);
     };

@@ -1,6 +1,7 @@
+// CustomerDashboard.tsx
 "use client"
 
-import { Suspense, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,80 +11,63 @@ import BookClass from "@/components/BookClass"
 import { MyUpcomingClasses } from "@/components/MyUpcomingClasses "
 import { Calendar, Activity, Target, Award, Clock, MapPin, X, CheckCircle, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
-
-// Mock data - replace with real data from your API
-const mockBookingRequests = [
-  {
-    id: 1,
-    className: "Morning Yoga",
-    instructor: "Sarah Johnson",
-    date: "2024-01-15",
-    time: "07:00 AM",
-    status: "pending",
-    location: "Studio A",
-  },
-  {
-    id: 2,
-    className: "HIIT Training",
-    instructor: "Mike Wilson",
-    date: "2024-01-16",
-    time: "06:00 PM",
-    status: "confirmed",
-    location: "Gym Floor",
-  },
-  {
-    id: 3,
-    className: "Pilates",
-    instructor: "Emma Davis",
-    date: "2024-01-17",
-    time: "09:00 AM",
-    status: "pending",
-    location: "Studio B",
-  },
-]
-
-const mockMembershipInfo = {
-  plan: "Premium",
-  startDate: "2024-01-01",
-  endDate: "2024-12-31",
-  status: "active",
-  remainingClasses: 15,
-  totalClasses: 20,
-}
+import { db } from "@/firebase"
+import { collection, getDocs, query, where } from "firebase/firestore"
+import { format } from "date-fns"
+import { useAuth } from "@/hooks/useAuth"
 
 const CustomerDashboard = () => {
-  const [bookingRequests, setBookingRequests] = useState(mockBookingRequests)
+  const { user } = useAuth()
+  const [bookingRequests, setBookingRequests] = useState<any[]>([])
 
-  const handleCancelRequest = (requestId: number) => {
+  const handleCancelRequest = (requestId: string) => {
     setBookingRequests((prev) => prev.filter((request) => request.id !== requestId))
     toast.success("Booking request cancelled successfully")
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "confirmed":
-        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
-      case "cancelled":
-        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
+      case "confirmed": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+      case "pending": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+      case "cancelled": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "confirmed":
-        return <CheckCircle className="h-4 w-4" />
-      case "pending":
-        return <Clock className="h-4 w-4" />
-      case "cancelled":
-        return <X className="h-4 w-4" />
-      default:
-        return <AlertCircle className="h-4 w-4" />
+      case "confirmed": return <CheckCircle className="h-4 w-4" />
+      case "pending": return <Clock className="h-4 w-4" />
+      case "cancelled": return <X className="h-4 w-4" />
+      default: return <AlertCircle className="h-4 w-4" />
     }
   }
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        if (!user?.id) return
+        const q = query(collection(db, "bookings"), where("userId", "==", user.id))
+        const snapshot = await getDocs(q)
+        const list = snapshot.docs.map((doc) => {
+          const data = doc.data()
+          return {
+            id: doc.id,
+            className: data.className,
+            instructor: data.instructor,
+            date: data.date?.toDate ? format(data.date.toDate(), "yyyy-MM-dd") : "",
+            time: data.time,
+            location: data.location || "",
+            status: data.status || "pending"
+          }
+        })
+        setBookingRequests(list)
+      } catch (err) {
+        console.error("Error fetching bookings", err)
+      }
+    }
+    fetchBookings()
+  }, [user])
 
   return (
     <div className="space-y-6">
@@ -92,7 +76,6 @@ const CustomerDashboard = () => {
         <p className="text-muted-foreground">Track your progress and manage your fitness activities</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -140,45 +123,6 @@ const CustomerDashboard = () => {
         </Card>
       </div>
 
-      {/* Membership Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Award className="h-5 w-5 text-primary" />
-            Membership Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Plan</p>
-              <p className="text-lg font-semibold">{mockMembershipInfo.plan}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Status</p>
-              <Badge className="mt-1 bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-                {mockMembershipInfo.status}
-              </Badge>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Valid Until</p>
-              <p className="text-lg font-semibold">{mockMembershipInfo.endDate}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Remaining Classes</p>
-              <p className="text-lg font-semibold">
-                {mockMembershipInfo.remainingClasses}/{mockMembershipInfo.totalClasses}
-              </p>
-              <Progress
-                value={(mockMembershipInfo.remainingClasses / mockMembershipInfo.totalClasses) * 100}
-                className="mt-2"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs for different sections */}
       <Tabs defaultValue="book-class" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="book-class">Book Classes</TabsTrigger>
@@ -225,18 +169,12 @@ const CustomerDashboard = () => {
                             <MapPin className="h-4 w-4" />
                             {request.location}
                           </div>
-                          <div>Instructor: {request.instructor}</div>
+                          <div>Instructor: {request.instructor || "N/A"}</div>
                         </div>
                       </div>
                       {request.status === "pending" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCancelRequest(request.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Cancel
+                        <Button variant="outline" size="sm" onClick={() => handleCancelRequest(request.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                          <X className="h-4 w-4 mr-1" /> Cancel
                         </Button>
                       )}
                     </div>

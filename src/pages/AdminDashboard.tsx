@@ -1,6 +1,7 @@
+// AdminDashboard.tsx
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { UserManagement } from "@/components/UserManagement"
 import BookingRequests from "@/components/BookingRequests"
 import { ClassScheduler } from "@/components/ClassScheduler"
@@ -11,15 +12,11 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Users, Calendar, Settings, BarChart3, Activity, UserCheck, AlertTriangle, CheckCircle } from "lucide-react"
-
-// Mock data for system health and analytics
-const systemHealth = {
-  serverStatus: "online",
-  databaseStatus: "online",
-  lastBackup: "2024-01-15 02:00 AM",
-  activeUsers: 156,
-  systemLoad: 65,
-}
+import { db } from '@/firebase'
+import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { format } from 'date-fns'
 
 const recentActivities = [
   { id: 1, action: "New member registered", user: "John Doe", time: "2 minutes ago", type: "success" },
@@ -30,120 +27,105 @@ const recentActivities = [
 
 const AdminDashboard = () => {
   const [selectedTab, setSelectedTab] = useState("overview")
+  const [region, setRegion] = useState<string>('all')
+  const [dateFilter, setDateFilter] = useState<string>('')
+  const [totalCustomers, setTotalCustomers] = useState<number>(0)
+  const [totalManagers, setTotalManagers] = useState<number>(0)
+  const [totalClasses, setTotalClasses] = useState<number>(0)
+  const [pendingRequests, setPendingRequests] = useState<number>(0)
+
+  const fetchData = async () => {
+    const regionFilter = region !== 'all' ? where('region', '==', region) : null
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayTimestamp = Timestamp.fromDate(todayStart)
+
+    const userQuery = regionFilter ? query(collection(db, 'users'), regionFilter) : collection(db, 'users')
+    const usersSnapshot = await getDocs(userQuery)
+    setTotalCustomers(usersSnapshot.docs.filter(doc => doc.data().role === 'customer').length)
+    setTotalManagers(usersSnapshot.docs.filter(doc => doc.data().role === 'manager').length)
+
+    const bookingQuery = regionFilter ? query(collection(db, 'bookings'), regionFilter) : collection(db, 'bookings')
+    const bookingsSnapshot = await getDocs(bookingQuery)
+    setPendingRequests(bookingsSnapshot.docs.filter(doc => doc.data().status === 'pending').length)
+
+    const classQuery = regionFilter ? query(collection(db, 'classes'), regionFilter) : collection(db, 'classes')
+    const classSnapshot = await getDocs(classQuery)
+    const filteredClasses = dateFilter
+      ? classSnapshot.docs.filter(doc => format(doc.data().date.toDate(), 'yyyy-MM-dd') === dateFilter)
+      : classSnapshot.docs
+    setTotalClasses(filteredClasses.length)
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [region, dateFilter])
 
   const statsData = [
     {
       title: "Total Members",
-      value: "1,245",
+      value: `${totalCustomers}`,
       icon: <Users className="h-4 w-4" />,
-      trend: { value: "+12%", isPositive: true },
-      subtitle: "from last month",
+      subtitle: region === 'all' ? "All regions" : `Region: ${region}`,
     },
     {
       title: "Active Classes",
-      value: "45",
+      value: `${totalClasses}`,
       icon: <Calendar className="h-4 w-4" />,
-      subtitle: "Across all regions",
+      subtitle: dateFilter ? `On ${dateFilter}` : "Across all dates",
     },
     {
       title: "Staff Members",
-      value: "28",
+      value: `${totalManagers}`,
       icon: <Settings className="h-4 w-4" />,
-      trend: { value: "+2", isPositive: true },
-      subtitle: "this month",
+      subtitle: region === 'all' ? "All regions" : `Region: ${region}`,
     },
     {
-      title: "Monthly Revenue",
-      value: "₹2,45,000",
+      title: "Pending Requests",
+      value: `${pendingRequests}`,
       icon: <BarChart3 className="h-4 w-4" />,
-      trend: { value: "+8%", isPositive: true },
-      subtitle: "from last month",
+      subtitle: region === 'all' ? "All regions" : `Region: ${region}`,
     },
   ]
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case "success":
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "warning":
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />
-      case "info":
-        return <Activity className="h-4 w-4 text-blue-500" />
-      default:
-        return <Activity className="h-4 w-4 text-gray-500" />
+      case "success": return <CheckCircle className="h-4 w-4 text-green-500" />
+      case "warning": return <AlertTriangle className="h-4 w-4 text-yellow-500" />
+      case "info": return <Activity className="h-4 w-4 text-blue-500" />
+      default: return <Activity className="h-4 w-4 text-gray-500" />
     }
-  }
+  } 
 
   return (
     <>
-      {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="animate-fade-in">
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Admin Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm md:text-base">Manage your gym operations with ease</p>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">Admin Dashboard</h1>
+          <p className="text-muted-foreground text-sm">Manage your gym operations with ease</p>
         </div>
-        <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground bg-card/70 px-3 py-1 rounded-lg backdrop-blur-sm border">
-          <Activity className="h-4 w-4 text-green-500" />
-          Live Dashboard
+        <div className="flex gap-2">
+          <Select value={region} onValueChange={setRegion}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Region" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="gujarat">Gujarat</SelectItem>
+              <SelectItem value="maharashtra">Maharashtra</SelectItem>
+              <SelectItem value="madhya pradesh">Madhya Pradesh</SelectItem>
+              <SelectItem value="rajasthan">Rajasthan</SelectItem>
+            </SelectContent>
+          </Select> 
+          <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="w-[140px]" />
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
         {statsData.map((stat, index) => (
-          <div key={stat.title} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
-            <StatsCard {...stat} />
-          </div>
+          <StatsCard key={index} {...stat} />
         ))}
       </div>
 
-      {/* System Health Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
-            System Health
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Server Status</p>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm font-semibold capitalize">{systemHealth.serverStatus}</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Database</p>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm font-semibold capitalize">{systemHealth.databaseStatus}</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Active Users</p>
-              <p className="text-lg font-semibold">{systemHealth.activeUsers}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">System Load</p>
-              <div className="mt-1">
-                <p className="text-lg font-semibold">{systemHealth.systemLoad}%</p>
-                <Progress value={systemHealth.systemLoad} className="mt-1" />
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Last Backup</p>
-              <p className="text-sm font-semibold">{systemHealth.lastBackup}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs for different admin sections */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4 mt-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
@@ -152,7 +134,6 @@ const AdminDashboard = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Recent Activities */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -175,33 +156,6 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Button className="h-20 flex flex-col gap-2">
-                  <Users className="h-6 w-6" />
-                  Add Member
-                </Button>
-                <Button variant="outline" className="h-20 flex flex-col gap-2">
-                  <UserCheck className="h-6 w-6" />
-                  Add Staff
-                </Button>
-                <Button variant="outline" className="h-20 flex flex-col gap-2">
-                  <Calendar className="h-6 w-6" />
-                  Schedule Class
-                </Button>
-                <Button variant="outline" className="h-20 flex flex-col gap-2">
-                  <BarChart3 className="h-6 w-6" />
-                  View Reports
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="users" className="space-y-6">
@@ -211,21 +165,13 @@ const AdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="bookings" className="space-y-6">
-          <CollapsibleCard
-            title="Booking Requests"
-            icon={<Calendar className="h-5 w-5 text-primary/80" />}
-            defaultOpen={true}
-          >
+          <CollapsibleCard title="Booking Requests" icon={<Calendar className="h-5 w-5 text-primary/80" />} defaultOpen={true}>
             <BookingRequests />
           </CollapsibleCard>
         </TabsContent>
 
         <TabsContent value="classes" className="space-y-6">
-          <CollapsibleCard
-            title="Class Scheduler"
-            icon={<Settings className="h-5 w-5 text-primary/60" />}
-            defaultOpen={true}
-          >
+          <CollapsibleCard title="Class Scheduler" icon={<Settings className="h-5 w-5 text-primary/60" />} defaultOpen={true}>
             <ClassScheduler />
           </CollapsibleCard>
         </TabsContent>

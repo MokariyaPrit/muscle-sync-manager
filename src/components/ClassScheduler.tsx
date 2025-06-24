@@ -1,14 +1,15 @@
+// ClassScheduler.tsx
+"use client"
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2, Calendar } from 'lucide-react';
 import { db } from '@/firebase';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -34,43 +35,58 @@ export const ClassScheduler = () => {
     time: '',
     duration: '60',
     capacity: 20,
-    region: user?.region || ''
+    region: user?.role === 'admin' ? 'all' : user?.region || ''
   });
   const [editingClass, setEditingClass] = useState<ClassItem | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const fetchClasses = async () => {
-    if (!user?.region) return;
 
-    try {
-      const q = query(collection(db, 'classes'), where('region', '==', user.region));
-      const querySnapshot = await getDocs(q);
-      const classesList: ClassItem[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        classesList.push({
-          id: doc.id,
-          name: data.name,
-          instructor: data.instructor,
-          date: data.date,
-          time: data.time,
-          duration: data.duration,
-          capacity: data.capacity,
-          region: data.region
-        });
-      });
-      setClasses(classesList);
-    } catch (error) {
-      console.error('Error fetching classes:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch classes',
-        variant: 'destructive'
-      });
+const fetchClasses = async () => {
+  if (!user?.role) return;
+
+  try {
+    let q;
+
+    if (user.role === 'admin') {
+      // Admin sees all classes
+      q = collection(db, 'classes');
+    } else {
+      // Manager sees classes in their region or region === 'all'
+      q = query(
+        collection(db, 'classes'),
+        where('region', 'in', [user.region, 'all'])
+      );
     }
-  };
 
+    const querySnapshot = await getDocs(q);
+    const classesList: ClassItem[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data() as any;
+      classesList.push({
+        id: doc.id,
+        name: data.name,
+        instructor: data.instructor,
+        date: data.date?.toDate?.().toISOString().slice(0, 10) ?? '',
+        time: data.time,
+        duration: data.duration,
+        capacity: data.capacity,
+        region: data.region,
+      }); 
+    });
+
+    setClasses(classesList);
+  } catch (error) {
+    console.error('Error fetching classes:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to fetch classes',
+      variant: 'destructive'
+    });
+  }
+};
+ 
   useEffect(() => {
     fetchClasses();
   }, [user]);
@@ -79,10 +95,15 @@ export const ClassScheduler = () => {
     if (!user?.region) return;
 
     try {
-      const classWithRegion = { ...newClass, region: user.region };
+      const classWithRegion = {
+        ...newClass,
+        region: user.role === 'admin' ? 'all' : user.region,
+        date: Timestamp.fromDate(new Date(newClass.date))
+      };
+
       const docRef = await addDoc(collection(db, 'classes'), classWithRegion);
-      
-      setClasses([...classes, { id: docRef.id, ...classWithRegion }]);
+
+      setClasses([...classes, { id: docRef.id, ...classWithRegion, date: newClass.date }]);
       setNewClass({
         name: '',
         instructor: '',
@@ -90,21 +111,14 @@ export const ClassScheduler = () => {
         time: '',
         duration: '60',
         capacity: 20,
-        region: user.region
+        region: user.role === 'admin' ? 'all' : user.region
       });
       setIsDialogOpen(false);
-      
-      toast({
-        title: 'Success',
-        description: 'Class scheduled successfully',
-      });
+
+      toast({ title: 'Success', description: 'Class scheduled successfully' });
     } catch (error) {
       console.error('Error adding class:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to schedule class',
-        variant: 'destructive'
-      });
+      toast({ title: 'Error', description: 'Failed to schedule class', variant: 'destructive' });
     }
   };
 
@@ -115,7 +129,7 @@ export const ClassScheduler = () => {
       await updateDoc(doc(db, 'classes', editingClass.id), {
         name: editingClass.name,
         instructor: editingClass.instructor,
-        date: editingClass.date,
+        date: Timestamp.fromDate(new Date(editingClass.date)),
         time: editingClass.time,
         duration: editingClass.duration,
         capacity: editingClass.capacity
@@ -124,18 +138,11 @@ export const ClassScheduler = () => {
       setClasses(classes.map(cls => cls.id === editingClass.id ? editingClass : cls));
       setIsEditDialogOpen(false);
       setEditingClass(null);
-      
-      toast({
-        title: 'Success',
-        description: 'Class updated successfully',
-      });
+
+      toast({ title: 'Success', description: 'Class updated successfully' });
     } catch (error) {
       console.error('Error updating class:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update class',
-        variant: 'destructive'
-      });
+      toast({ title: 'Error', description: 'Failed to update class', variant: 'destructive' });
     }
   };
 
@@ -143,18 +150,10 @@ export const ClassScheduler = () => {
     try {
       await deleteDoc(doc(db, 'classes', id));
       setClasses(classes.filter(cls => cls.id !== id));
-      
-      toast({
-        title: 'Success',
-        description: 'Class deleted successfully',
-      });
+      toast({ title: 'Success', description: 'Class deleted successfully' });
     } catch (error) {
       console.error('Error deleting class:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete class',
-        variant: 'destructive'
-      });
+      toast({ title: 'Error', description: 'Failed to delete class', variant: 'destructive' });
     }
   };
 
@@ -178,40 +177,13 @@ export const ClassScheduler = () => {
                 <DialogTitle>Schedule New Class</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <Input
-                  placeholder="Class Name"
-                  value={newClass.name}
-                  onChange={(e) => setNewClass({...newClass, name: e.target.value})}
-                />
-                <Input
-                  placeholder="Instructor"
-                  value={newClass.instructor}
-                  onChange={(e) => setNewClass({...newClass, instructor: e.target.value})}
-                />
-                <Input
-                  type="date"
-                  value={newClass.date}
-                  onChange={(e) => setNewClass({...newClass, date: e.target.value})}
-                />
-                <Input
-                  type="time"
-                  value={newClass.time}
-                  onChange={(e) => setNewClass({...newClass, time: e.target.value})}
-                />
-                <Input
-                  placeholder="Duration (minutes)"
-                  value={newClass.duration}
-                  onChange={(e) => setNewClass({...newClass, duration: e.target.value})}
-                />
-                <Input
-                  type="number"
-                  placeholder="Capacity"
-                  value={newClass.capacity}
-                  onChange={(e) => setNewClass({...newClass, capacity: parseInt(e.target.value)})}
-                />
-                <Button onClick={handleAddClass} className="w-full">
-                  Schedule Class
-                </Button>
+                <Input placeholder="Class Name" value={newClass.name} onChange={(e) => setNewClass({ ...newClass, name: e.target.value })} />
+                <Input placeholder="Instructor" value={newClass.instructor} onChange={(e) => setNewClass({ ...newClass, instructor: e.target.value })} />
+                <Input type="date" value={newClass.date} onChange={(e) => setNewClass({ ...newClass, date: e.target.value })} />
+                <Input type="time" value={newClass.time} onChange={(e) => setNewClass({ ...newClass, time: e.target.value })} />
+                <Input placeholder="Duration (minutes)" value={newClass.duration} onChange={(e) => setNewClass({ ...newClass, duration: e.target.value })} />
+                <Input type="number" placeholder="Capacity" value={newClass.capacity} onChange={(e) => setNewClass({ ...newClass, capacity: parseInt(e.target.value) })} />
+                <Button onClick={handleAddClass} className="w-full">Schedule Class</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -226,6 +198,7 @@ export const ClassScheduler = () => {
               <TableHead>Date</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Capacity</TableHead>
+              <TableHead>Region</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -237,23 +210,13 @@ export const ClassScheduler = () => {
                 <TableCell>{cls.date}</TableCell>
                 <TableCell>{cls.time}</TableCell>
                 <TableCell>{cls.capacity}</TableCell>
+                <TableCell>{cls.region}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setEditingClass(cls);
-                        setIsEditDialogOpen(true);
-                      }}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => { setEditingClass(cls); setIsEditDialogOpen(true); }}>
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => handleDeleteClass(cls.id)}
-                    >
+                    <Button variant="destructive" size="sm" onClick={() => handleDeleteClass(cls.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -270,40 +233,13 @@ export const ClassScheduler = () => {
             </DialogHeader>
             {editingClass && (
               <div className="space-y-4">
-                <Input
-                  placeholder="Class Name"
-                  value={editingClass.name}
-                  onChange={(e) => setEditingClass({...editingClass, name: e.target.value})}
-                />
-                <Input
-                  placeholder="Instructor"
-                  value={editingClass.instructor}
-                  onChange={(e) => setEditingClass({...editingClass, instructor: e.target.value})}
-                />
-                <Input
-                  type="date"
-                  value={editingClass.date}
-                  onChange={(e) => setEditingClass({...editingClass, date: e.target.value})}
-                />
-                <Input
-                  type="time"
-                  value={editingClass.time}
-                  onChange={(e) => setEditingClass({...editingClass, time: e.target.value})}
-                />
-                <Input
-                  placeholder="Duration (minutes)"
-                  value={editingClass.duration}
-                  onChange={(e) => setEditingClass({...editingClass, duration: e.target.value})}
-                />
-                <Input
-                  type="number"
-                  placeholder="Capacity"
-                  value={editingClass.capacity}
-                  onChange={(e) => setEditingClass({...editingClass, capacity: parseInt(e.target.value)})}
-                />
-                <Button onClick={handleEditClass} className="w-full">
-                  Update Class
-                </Button>
+                <Input placeholder="Class Name" value={editingClass.name} onChange={(e) => setEditingClass({ ...editingClass, name: e.target.value })} />
+                <Input placeholder="Instructor" value={editingClass.instructor} onChange={(e) => setEditingClass({ ...editingClass, instructor: e.target.value })} />
+                <Input type="date" value={editingClass.date} onChange={(e) => setEditingClass({ ...editingClass, date: e.target.value })} />
+                <Input type="time" value={editingClass.time} onChange={(e) => setEditingClass({ ...editingClass, time: e.target.value })} />
+                <Input placeholder="Duration (minutes)" value={editingClass.duration} onChange={(e) => setEditingClass({ ...editingClass, duration: e.target.value })} />
+                <Input type="number" placeholder="Capacity" value={editingClass.capacity} onChange={(e) => setEditingClass({ ...editingClass, capacity: parseInt(e.target.value) })} />
+                <Button onClick={handleEditClass} className="w-full">Update Class</Button>
               </div>
             )}
           </DialogContent>
@@ -312,3 +248,4 @@ export const ClassScheduler = () => {
     </Card>
   );
 };
+   
