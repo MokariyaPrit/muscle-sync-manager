@@ -1,21 +1,15 @@
+// Remove any Sidebar imports from here
 
-import React from 'react';
-import { Dashboard } from '@/components/Dashboard';
-import { Header } from '@/components/Header';
-import { Sidebar } from '@/components/Sidebar';
-
-const Index = () => {
+export default function Index() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <Header />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-6">
-          <Dashboard />
-        </main>
+    <div className="space-y-6">
+      {/* Don't render Sidebar here */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">Welcome to your dashboard</p>
       </div>
-    </div>
-  );
-};
 
-export default Index;
+      {/* Your dashboard content */}
+    </div>
+  )
+}

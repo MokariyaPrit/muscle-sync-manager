@@ -1,7 +1,7 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Link, useLocation } from 'react-router-dom';
+"use client"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Link, useLocation } from "react-router-dom"
 import {
   User,
   Calendar,
@@ -10,73 +10,99 @@ import {
   ArrowDown,
   LayoutDashboard,
   Users,
-  BookCheckIcon
-} from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+  BookCheckIcon,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
+import { useState } from "react"
 
 const menuItems = [
-  { icon: BookCheckIcon, label: 'BookClass', path: '/book-class', allowedRoles: ['admin', 'manager', 'customer'] },
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/', allowedRoles: ['admin', 'manager', 'customer'] },
-  { icon: Users, label: 'Members', path: '/members', allowedRoles: ['admin', 'manager'] },
-  { icon: Users, label: 'BookingRequests', path: '/booking-requests', allowedRoles: ['admin', 'manager'] },
-  { icon: User, label: 'Staff', path: '/staff', allowedRoles: ['admin'] },
-  { icon: Calendar, label: 'Attendance', path: '/attendance', allowedRoles: ['admin', 'manager'] },
-  { icon: Check, label: 'Memberships', path: '/memberships', allowedRoles: ['admin', 'manager'] },
-  { icon: ArrowUp, label: 'Payments', path: '/payments', allowedRoles: ['admin', 'manager'] },
-  { icon: ArrowDown, label: 'Reports', path: '/reports', allowedRoles: ['admin', 'manager'] },
-];
+  { icon: BookCheckIcon, label: "BookClass", path: "/book-class", allowedRoles: ["admin", "manager", "customer"] },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", allowedRoles: ["admin", "manager", "customer"] },
+  { icon: Users, label: "Members", path: "/members", allowedRoles: ["admin", "manager"] },
+  { icon: Users, label: "BookingRequests", path: "/booking-requests", allowedRoles: ["admin", "manager"] },
+  { icon: User, label: "Staff", path: "/staff", allowedRoles: ["admin"] },
+  { icon: Calendar, label: "Attendance", path: "/attendance", allowedRoles: ["admin", "manager"] },
+  { icon: Check, label: "Memberships", path: "/memberships", allowedRoles: ["admin", "manager"] },
+  { icon: ArrowUp, label: "Payments", path: "/payments", allowedRoles: ["admin", "manager"] },
+  { icon: ArrowDown, label: "Reports", path: "/reports", allowedRoles: ["admin", "manager"] },
+]
 
-export const Sidebar = () => {    
-  const location = useLocation(); 
-  const { user } = useAuth();
+export const Sidebar = () => {
+  const [collapsed, setCollapsed] = useState(false)
+  const location = useLocation()
+  const { user } = useAuth()
 
-  if (!user) return null; // Prevent render if user is not loaded
+  if (!user) return null
 
   return (
-    <aside className="w-64 bg-white shadow-sm border-r border-gray-200 h-[calc(100vh-73px)]">
-      <nav className="p-4 space-y-2">
-        <div className="mb-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Main Menu
-          </h2>
+    <aside
+      className={cn(
+        "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm border-r border-border transition-all duration-300",
+        collapsed ? "w-16" : "w-64",
+        "h-[calc(100vh-64px)]", // Adjust for header height
+      )}
+    >
+      <nav className="p-4 space-y-2 h-full flex flex-col">
+        {/* Header with collapse button */}
+        <div className="flex items-center justify-between mb-6">
+          {!collapsed && (
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Main Menu</h2>
+          )}
+          <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)} className="h-8 w-8 ml-auto">
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
         </div>
 
-        {menuItems
-          .filter(item => item.allowedRoles.includes(user.role))
-          .map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+        {/* Navigation Items */}
+        <div className="flex-1 space-y-2">
+          {menuItems
+            .filter((item) => item.allowedRoles.includes(user.role))
+            .map((item) => {
+              const Icon = item.icon
+              const isActive = location.pathname === item.path
 
-            return (
-              <Link key={item.path} to={item.path}>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start space-x-3 h-12 transition-all duration-200",
-                    isActive
-                      ? "bg-gradient-to-r from-blue-500 to-orange-500 text-white shadow-lg hover:from-blue-600 hover:to-orange-600"
-                      : "hover:bg-gray-100 text-gray-700"
-                  )}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </Button>
-              </Link>
-            );
-          })}
+              return (
+                <Link key={item.path} to={item.path}>
+                  <Button
+                    variant={isActive ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full transition-all duration-200",
+                      collapsed ? "justify-center px-2" : "justify-start space-x-3",
+                      "h-12",
+                      isActive
+                        ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg hover:from-primary/90 hover:to-primary/70"
+                        : "hover:bg-accent text-foreground",
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {!collapsed && <span className="font-medium">{item.label}</span>}
+                  </Button>
+                </Link>
+              )
+            })}
+        </div>
 
-        <div className="pt-6 mt-6 border-t border-gray-200">
-          <div className="bg-gradient-to-r from-blue-50 to-orange-50 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-2">Upgrade Plan</h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Get access to premium features and unlimited regions.
-            </p>
-            <Button size="sm" className="w-full bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600">
-              Upgrade Now
-            </Button>
+        {/* Upgrade Section */}
+        {!collapsed && (
+          <div className="pt-6 mt-6 border-t border-border">
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20">
+              <h3 className="font-semibold text-foreground mb-2">Upgrade Plan</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Get access to premium features and unlimited regions.
+              </p>
+              <Button
+                size="sm"
+                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              >
+                Upgrade Now
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </nav>
     </aside>
-  );
-};  
+  )
+}
+ 

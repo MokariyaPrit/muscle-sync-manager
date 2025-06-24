@@ -27,21 +27,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  console.log('AuthProvider state:', { user, isAuthenticated, loading });
+  // console.log('AuthProvider state:', { user, isAuthenticated, loading });
 
   useEffect(() => {
     const savedUser = localStorage.getItem('gym_user');
-    console.log('Saved user from localStorage:', savedUser);
+    // console.log('Saved user from localStorage:', savedUser);
     
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
-      console.log('Parsed user:', parsedUser);
+      // console.log('Parsed user:', parsedUser);
       setUser(parsedUser);
       setIsAuthenticated(true);
     }
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
-      console.log('Firebase auth state changed:', firebaseUser);
+      // console.log('Firebase auth state changed:', firebaseUser);
       if (!firebaseUser) {
         console.log('No firebase user, clearing state');
         setUser(null);

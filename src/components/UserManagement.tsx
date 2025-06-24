@@ -68,7 +68,7 @@ export const UserManagement = () => {
         } as User);
       });
       
-      console.log('Fetched users:', usersList);
+      // console.log('Fetched users:', usersList);
       setUsers(usersList);
     } catch (error) {
       console.error('Error fetching users:', error);

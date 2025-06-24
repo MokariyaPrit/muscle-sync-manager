@@ -1,136 +1,220 @@
-import React, { ReactNode } from 'react';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import {} from './firebase'
+import type React from "react"
+import { Toaster } from "@/components/ui/toaster"
+import { Toaster as Sonner } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { AuthProvider } from "@/hooks/useAuth"
+import { ThemeProvider } from "@/components/theme-provider"
+import ProtectedRoute from "@/components/ProtectedRoute"
+import { PublicLayout, DashboardLayout } from "@/components/layout"
 
 // Pages
-import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import AdminDashboard from "./pages/AdminDashboard";
-import ManagerDashboard from "./pages/ManagerDashboard";
-import CustomerDashboard from "./pages/CustomerDashboard";
-import Index from "./pages/Index";
-import Members from "./pages/Members";
-import Staff from "./pages/Staff";
-import Attendance from "./pages/Attendance";
-import Memberships from "./pages/Memberships";
-import Payments from "./pages/Payments";
-import Reports from "./pages/Reports";
-import Unauthorized from "./pages/Unauthorized";
-import NotFound from "./pages/NotFound";
-import Signup from './pages/Signup';
-import CreateSampleClasses from './components/CreateSampleClasses';
-import BookClass from './components/BookClass';
-import BookingRequests from './components/BookingRequests';
+import Landing from "./pages/Landing"
+import Login from "./pages/Login"
+import AdminDashboard from "./pages/AdminDashboard"
+import CustomerDashboard from "./pages/CustomerDashboard"
+import ManagerDashboard from "./pages/ManagerDashboard"
+import Index from "./pages/Index"
+import Members from "./pages/Members"
+import Staff from "./pages/Staff"
+import Attendance from "./pages/Attendance"
+import Memberships from "./pages/Memberships"
+import Payments from "./pages/Payments"
+import Reports from "./pages/Reports"
+import NotFound from "./pages/NotFound"
+import Signup from "./pages/Signup"
+import BookClass from "./components/BookClass"
+import BookingRequests from "./components/BookingRequests"
 
-const queryClient = new QueryClient();
-
-type ProtectedRouteProps = {
-  allowedRoles: string[];
-  children: ReactNode;
-};
+const queryClient = new QueryClient()
 
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Signup />} />
-              <Route path="/unauthorized" element={<Unauthorized />} />
-              <Route path="/create-classes" element={<CreateSampleClasses />} />
-              <Route path="/book-class" element={<BookClass />} />
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route
+                  path="/"
+                  element={
+                    <PublicLayout>
+                      <Landing />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/login"
+                  element={
+                    <PublicLayout>
+                      <Login />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/register"
+                  element={
+                    <PublicLayout>
+                      <Signup />
+                    </PublicLayout>
+                  }
+                />
 
+                {/* Protected Routes with Dashboard Layout */}
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <AdminDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
+                <Route
+                  path="/customer"
+                  element={
+                    <ProtectedRoute allowedRoles={["customer"]}>
+                      <DashboardLayout>
+                        <CustomerDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Protected Routes - Admin Only */}
+                <Route
+                  path="/manager"
+                  element={
+                    <ProtectedRoute allowedRoles={["manager"]}>
+                      <DashboardLayout>
+                        <ManagerDashboard />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* <Route path="/book-class" element={
-  <ProtectedRoute allowedRoles={['customer']}>
-    <BookClass />
-  </ProtectedRoute>
-} /> */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager", "customer"]}>
+                      <DashboardLayout>
+                        <Index />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-<Route path="/booking-requests" element={
-  <ProtectedRoute allowedRoles={['admin', 'manager']}>
-    <BookingRequests />
-  </ProtectedRoute>
-} />
+                <Route
+                  path="/members"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                      <DashboardLayout>
+                        <Members />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route path="/admin" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <Index />
-                </ProtectedRoute>
-              } />
-              <Route path="/members" element={
-                <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                  <Members />
-                </ProtectedRoute>
-              } />
-              <Route path="/staff" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <Staff />
-                </ProtectedRoute>
-              } />
-              <Route path="/attendance" element={
-                <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                  <Attendance />
-                </ProtectedRoute>
-              } />
-              <Route path="/memberships" element={
-                <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                  <Memberships />
-                </ProtectedRoute>
-              } />
-              <Route path="/payments" element={
-                <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                  <Payments />
-                </ProtectedRoute>
-              } />
-              <Route path="/reports" element={
-                <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                  <Reports />
-                </ProtectedRoute>
-              } />
+                <Route
+                  path="/booking-requests"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                      <DashboardLayout>
+                        <BookingRequests />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Manager Dashboard */}
-              <Route path="/manager" element={
-                <ProtectedRoute allowedRoles={['manager']}>
-                  <ManagerDashboard />
-                </ProtectedRoute>
-              } />
+                <Route
+                  path="/staff"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        <Staff />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Customer Dashboard */}
-              <Route path="/customer" element={
-                <ProtectedRoute allowedRoles={['customer']}>
-                  <CustomerDashboard />
-                </ProtectedRoute>
-              } />
+                <Route
+                  path="/attendance"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                      <DashboardLayout>
+                        <Attendance />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Catch-all route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
+                <Route
+                  path="/memberships"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                      <DashboardLayout>
+                        <Memberships />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/payments"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                      <DashboardLayout>
+                        <Payments />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/reports"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                      <DashboardLayout>
+                        <Reports />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/book-class"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager", "customer"]}>
+                      <DashboardLayout>
+                        <BookClass />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Catch-all route */}
+                <Route
+                  path="*"
+                  element={
+                    <PublicLayout>
+                      <NotFound />
+                    </PublicLayout>
+                  }
+                />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
-  );
-};
+  )
+}
 
-export default App;
+export default App
+  

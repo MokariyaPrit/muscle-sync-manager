@@ -80,7 +80,7 @@ const BookingRequests = () => {
         } as Booking);
       });
 
-      console.log('Fetched bookings:', list);
+      // console.log('Fetched bookings:', list);
       setBookings(list);
     } catch (err) {
       console.error('Failed to fetch bookings:', err);
