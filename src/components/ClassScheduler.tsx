@@ -6,13 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { Plus, Edit, Trash2, Calendar } from 'lucide-react';
 import { db } from '@/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 
-interface ClassSchedule {
+interface ClassItem {
   id: string;
   name: string;
   instructor: string;
@@ -20,45 +20,47 @@ interface ClassSchedule {
   time: string;
   duration: string;
   capacity: number;
-  enrolled?: number;
   region: string;
-  createdBy: string;
 }
 
 export const ClassScheduler = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [schedules, setSchedules] = useState<ClassSchedule[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const [newClass, setNewClass] = useState({
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [newClass, setNewClass] = useState<Omit<ClassItem, 'id'>>({
     name: '',
     instructor: '',
     date: '',
     time: '',
-    duration: '',
-    capacity: '',
+    duration: '60',
+    capacity: 20,
+    region: user?.region || ''
   });
-
+  const [editingClass, setEditingClass] = useState<ClassItem | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const fetchClasses = async () => {
-    if (!user) return;
+    if (!user?.region) return;
 
     try {
-      let q;
-      if (user.role === 'manager') {
-        q = query(collection(db, 'classes'), where('region', '==', user.region));
-      } else {
-        q = collection(db, 'classes');
-      }
-
+      const q = query(collection(db, 'classes'), where('region', '==', user.region));
       const querySnapshot = await getDocs(q);
-      const classList: ClassSchedule[] = [];
+      const classesList: ClassItem[] = [];
       querySnapshot.forEach((doc) => {
-        classList.push({ id: doc.id, ...doc.data() } as ClassSchedule);
+        const data = doc.data();
+        classesList.push({
+          id: doc.id,
+          name: data.name,
+          instructor: data.instructor,
+          date: data.date,
+          time: data.time,
+          duration: data.duration,
+          capacity: data.capacity,
+          region: data.region
+        });
       });
-      setSchedules(classList);
+      setClasses(classesList);
     } catch (error) {
       console.error('Error fetching classes:', error);
       toast({
@@ -74,61 +76,74 @@ export const ClassScheduler = () => {
   }, [user]);
 
   const handleAddClass = async () => {
-    if (!newClass.name || !newClass.instructor || !newClass.date || !newClass.time || !user) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive'
-      });
-      return;
-    }
+    if (!user?.region) return;
 
     try {
-      setLoading(true);
-      await addDoc(collection(db, 'classes'), {
-        name: newClass.name,
-        instructor: newClass.instructor,
-        date: newClass.date,
-        time: newClass.time,
-        duration: newClass.duration || '60',
-        capacity: parseInt(newClass.capacity) || 20,
-        enrolled: 0,
-        region: user.region,
-        createdBy: user.email,
-        createdAt: new Date().toISOString()
-      });
-
+      const classWithRegion = { ...newClass, region: user.region };
+      const docRef = await addDoc(collection(db, 'classes'), classWithRegion);
+      
+      setClasses([...classes, { id: docRef.id, ...classWithRegion }]);
       setNewClass({
         name: '',
         instructor: '',
         date: '',
         time: '',
-        duration: '',
-        capacity: '',
+        duration: '60',
+        capacity: 20,
+        region: user.region
       });
       setIsDialogOpen(false);
-      fetchClasses();
       
       toast({
         title: 'Success',
-        description: 'Class added successfully',
+        description: 'Class scheduled successfully',
       });
     } catch (error) {
       console.error('Error adding class:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add class',
+        description: 'Failed to schedule class',
         variant: 'destructive'
       });
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const handleEditClass = async () => {
+    if (!editingClass) return;
+
+    try {
+      await updateDoc(doc(db, 'classes', editingClass.id), {
+        name: editingClass.name,
+        instructor: editingClass.instructor,
+        date: editingClass.date,
+        time: editingClass.time,
+        duration: editingClass.duration,
+        capacity: editingClass.capacity
+      });
+
+      setClasses(classes.map(cls => cls.id === editingClass.id ? editingClass : cls));
+      setIsEditDialogOpen(false);
+      setEditingClass(null);
+      
+      toast({
+        title: 'Success',
+        description: 'Class updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating class:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update class',
+        variant: 'destructive'
+      });
     }
   };
 
   const handleDeleteClass = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'classes', id));
-      fetchClasses();
+      setClasses(classes.filter(cls => cls.id !== id));
+      
       toast({
         title: 'Success',
         description: 'Class deleted successfully',
@@ -144,89 +159,100 @@ export const ClassScheduler = () => {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Weekly Class Schedule</CardTitle>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Class
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Class</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Input
-                placeholder="Class Name"
-                value={newClass.name}
-                onChange={(e) => setNewClass({...newClass, name: e.target.value})}
-              />
-              <Input
-                placeholder="Instructor"
-                value={newClass.instructor}
-                onChange={(e) => setNewClass({...newClass, instructor: e.target.value})}
-              />
-              <Input
-                type="date"
-                value={newClass.date}
-                onChange={(e) => setNewClass({...newClass, date: e.target.value})}
-              />
-              <Input
-                type="time"
-                value={newClass.time}
-                onChange={(e) => setNewClass({...newClass, time: e.target.value})}
-              />
-              <Input
-                placeholder="Duration (minutes)"
-                value={newClass.duration}
-                onChange={(e) => setNewClass({...newClass, duration: e.target.value})}
-              />
-              <Input
-                placeholder="Capacity"
-                type="number"
-                value={newClass.capacity}
-                onChange={(e) => setNewClass({...newClass, capacity: e.target.value})}
-              />
-              <Button onClick={handleAddClass} disabled={loading} className="w-full">
-                {loading ? 'Adding...' : 'Add Class'}
+    <Card className="h-[600px]">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center">
+            <Calendar className="w-5 h-5 mr-2" />
+            Class Scheduler
+          </span>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Schedule Class
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Schedule New Class</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input
+                  placeholder="Class Name"
+                  value={newClass.name}
+                  onChange={(e) => setNewClass({...newClass, name: e.target.value})}
+                />
+                <Input
+                  placeholder="Instructor"
+                  value={newClass.instructor}
+                  onChange={(e) => setNewClass({...newClass, instructor: e.target.value})}
+                />
+                <Input
+                  type="date"
+                  value={newClass.date}
+                  onChange={(e) => setNewClass({...newClass, date: e.target.value})}
+                />
+                <Input
+                  type="time"
+                  value={newClass.time}
+                  onChange={(e) => setNewClass({...newClass, time: e.target.value})}
+                />
+                <Input
+                  placeholder="Duration (minutes)"
+                  value={newClass.duration}
+                  onChange={(e) => setNewClass({...newClass, duration: e.target.value})}
+                />
+                <Input
+                  type="number"
+                  placeholder="Capacity"
+                  value={newClass.capacity}
+                  onChange={(e) => setNewClass({...newClass, capacity: parseInt(e.target.value)})}
+                />
+                <Button onClick={handleAddClass} className="w-full">
+                  Schedule Class
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="h-[500px] overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Class Name</TableHead>
+              <TableHead>Class</TableHead>
               <TableHead>Instructor</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Time</TableHead>
-              <TableHead>Duration</TableHead>
               <TableHead>Capacity</TableHead>
-              <TableHead>Enrolled</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {schedules.map((schedule) => (
-              <TableRow key={schedule.id}>
-                <TableCell>{schedule.name}</TableCell>
-                <TableCell>{schedule.instructor}</TableCell>
-                <TableCell>{schedule.date}</TableCell>
-                <TableCell>{schedule.time}</TableCell>
-                <TableCell>{schedule.duration} min</TableCell>
-                <TableCell>{schedule.capacity}</TableCell>
-                <TableCell>{schedule.enrolled || 0}</TableCell>
+            {classes.map((cls) => (
+              <TableRow key={cls.id}>
+                <TableCell className="font-medium">{cls.name}</TableCell>
+                <TableCell>{cls.instructor}</TableCell>
+                <TableCell>{cls.date}</TableCell>
+                <TableCell>{cls.time}</TableCell>
+                <TableCell>{cls.capacity}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
                     <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setEditingClass(cls);
+                        setIsEditDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button 
                       variant="destructive" 
                       size="sm"
-                      onClick={() => handleDeleteClass(schedule.id)}
+                      onClick={() => handleDeleteClass(cls.id)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -236,6 +262,52 @@ export const ClassScheduler = () => {
             ))}
           </TableBody>
         </Table>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Class</DialogTitle>
+            </DialogHeader>
+            {editingClass && (
+              <div className="space-y-4">
+                <Input
+                  placeholder="Class Name"
+                  value={editingClass.name}
+                  onChange={(e) => setEditingClass({...editingClass, name: e.target.value})}
+                />
+                <Input
+                  placeholder="Instructor"
+                  value={editingClass.instructor}
+                  onChange={(e) => setEditingClass({...editingClass, instructor: e.target.value})}
+                />
+                <Input
+                  type="date"
+                  value={editingClass.date}
+                  onChange={(e) => setEditingClass({...editingClass, date: e.target.value})}
+                />
+                <Input
+                  type="time"
+                  value={editingClass.time}
+                  onChange={(e) => setEditingClass({...editingClass, time: e.target.value})}
+                />
+                <Input
+                  placeholder="Duration (minutes)"
+                  value={editingClass.duration}
+                  onChange={(e) => setEditingClass({...editingClass, duration: e.target.value})}
+                />
+                <Input
+                  type="number"
+                  placeholder="Capacity"
+                  value={editingClass.capacity}
+                  onChange={(e) => setEditingClass({...editingClass, capacity: parseInt(e.target.value)})}
+                />
+                <Button onClick={handleEditClass} className="w-full">
+                  Update Class
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

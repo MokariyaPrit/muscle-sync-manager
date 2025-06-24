@@ -47,11 +47,11 @@ export const UserManagement = () => {
         const userData = doc.data();
         usersList.push({ 
           id: doc.id, 
-          name: userData.name,
-          email: userData.email,
-          role: userData.role,
-          region: userData.region,
-          createdAt: userData.createdAt
+          name: userData.name || '',
+          email: userData.email || '',
+          role: userData.role || 'customer',
+          region: userData.region || '',
+          createdAt: userData.createdAt || ''
         } as User);
       });
       setUsers(usersList);
@@ -150,14 +150,14 @@ export const UserManagement = () => {
   };
 
   return (
-    <Card>
+    <Card className="h-[600px]">
       <CardHeader>
         <CardTitle className="flex items-center">
           <Users className="w-5 h-5 mr-2" />
           User Management
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="h-[500px] overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>

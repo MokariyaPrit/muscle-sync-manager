@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/firebase';
@@ -17,7 +18,8 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Clock } from 'lucide-react';
+import { Check, X, Clock, Calendar } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Booking {
   id: string;
@@ -31,28 +33,47 @@ interface Booking {
 
 const BookingRequests = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   const fetchBookings = async () => {
     if (!user) return;
 
-    let q;
-    if (user.role === 'manager') {
-      q = query(
-        collection(db, 'bookings'),
-        where('region', '==', user.region)
-      );
-    } else {
-      q = collection(db, 'bookings');
+    try {
+      let q;
+      if (user.role === 'manager') {
+        q = query(
+          collection(db, 'bookings'),
+          where('region', '==', user.region)
+        );
+      } else {
+        q = collection(db, 'bookings');
+      }
+
+      const snapshot = await getDocs(q);
+      const list: Booking[] = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        list.push({ 
+          id: docSnap.id, 
+          memberName: data.memberName || '',
+          className: data.className || '',
+          date: data.date || '',
+          time: data.time || '',
+          region: data.region || '',
+          status: data.status || 'pending'
+        } as Booking);
+      });
+
+      setBookings(list);
+    } catch (err) {
+      console.error('Failed to fetch bookings:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch booking requests',
+        variant: 'destructive'
+      });
     }
-
-    const snapshot = await getDocs(q);
-    const list: Booking[] = [];
-    snapshot.forEach(docSnap => {
-      list.push({ id: docSnap.id, ...(docSnap.data() as object) } as Booking);
-    });
-
-    setBookings(list);
   };
 
   const handleUpdate = async (id: string, status: 'approved' | 'rejected') => {
@@ -61,8 +82,17 @@ const BookingRequests = () => {
       setBookings(prev =>
         prev.map(req => req.id === id ? { ...req, status } : req)
       );
+      toast({
+        title: 'Success',
+        description: `Booking ${status} successfully`,
+      });
     } catch (err) {
       console.error(`Failed to ${status}:`, err);
+      toast({
+        title: 'Error',
+        description: `Failed to ${status} booking`,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -82,11 +112,14 @@ const BookingRequests = () => {
   }, [user]);
 
   return (
-    <Card>
+    <Card className="h-[600px]">
       <CardHeader>
-        <CardTitle>Class Booking Requests</CardTitle>
+        <CardTitle className="flex items-center">
+          <Calendar className="w-5 h-5 mr-2" />
+          Class Booking Requests
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="h-[500px] overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -138,4 +171,3 @@ const BookingRequests = () => {
 };
 
 export default BookingRequests;
-   
