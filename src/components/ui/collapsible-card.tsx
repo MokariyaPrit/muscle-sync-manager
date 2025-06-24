@@ -12,6 +12,7 @@ interface CollapsibleCardProps {
   defaultCollapsed?: boolean;
   className?: string;
   headerActions?: React.ReactNode;
+  style?: React.CSSProperties;
 }
 
 export const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
@@ -20,16 +21,20 @@ export const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
   icon,
   defaultCollapsed = false,
   className,
-  headerActions
+  headerActions,
+  style
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   return (
-    <Card className={cn(
-      "transition-all duration-300 ease-in-out hover:shadow-lg",
-      "border border-gray-200 bg-white/50 backdrop-blur-sm",
-      className
-    )}>
+    <Card 
+      className={cn(
+        "transition-all duration-300 ease-in-out hover:shadow-lg",
+        "border border-gray-200 bg-white/50 backdrop-blur-sm",
+        className
+      )}
+      style={style}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
