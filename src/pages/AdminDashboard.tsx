@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { UserManagement } from '@/components/UserManagement';
 import BookingRequests from '@/components/BookingRequests';
-import ClassScheduler from '@/components/ClassScheduler';
+import { ClassScheduler } from '@/components/ClassScheduler';
 import { Users, Calendar, Settings, BarChart3 } from 'lucide-react';
 
 const AdminDashboard = () => {
