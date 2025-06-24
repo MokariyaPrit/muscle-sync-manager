@@ -1,80 +1,14 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ClassScheduler } from '@/components/ClassScheduler';
+import { UserManagement } from '@/components/UserManagement';
 import BookingRequests from '@/components/BookingRequests';
-import { Users, Calendar, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase';
-import CountUp from 'react-countup';
+import ClassScheduler from '@/components/ClassScheduler';
+import { Users, Calendar, Activity, TrendingUp } from 'lucide-react';
 
 const ManagerDashboard = () => {
-  const { user } = useAuth();
-  const region = user?.region ?? '—';
-  const [memberCount, setMemberCount] = useState<number | null>(null);
-  const [growth, setGrowth] = useState<number | null>(null);
-  const [growthDirection, setGrowthDirection] = useState<'up' | 'down' | null>(null);
-
-  useEffect(() => {
-    if (!user || !user.region) return;
-
-    const fetchStats = async () => {
-      try {
-        const now = new Date();
-        const firstDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-
-        const thisMonthStart = firstDayOfCurrentMonth.toISOString();
-        const lastMonthStart = firstDayOfLastMonth.toISOString();
-
-        const currentQuery = query(
-          collection(db, 'users'),
-          where('region', '==', user.region),
-          where('role', '==', 'customer'),
-          where('createdAt', '>=', thisMonthStart)
-        );
-
-        const lastMonthQuery = query(
-          collection(db, 'users'),
-          where('region', '==', user.region),
-          where('role', '==', 'customer'),
-          where('createdAt', '>=', lastMonthStart),
-          where('createdAt', '<', thisMonthStart)
-        );
-
-        const totalQuery = query(
-          collection(db, 'users'),
-          where('region', '==', user.region),
-          where('role', '==', 'customer')
-        );
-
-        const [currentSnap, lastSnap, totalSnap] = await Promise.all([
-          getDocs(currentQuery),
-          getDocs(lastMonthQuery),
-          getDocs(totalQuery),
-        ]);
-
-        const currentCount = currentSnap.size;
-        const lastCount = lastSnap.size;
-        setMemberCount(totalSnap.size);
-
-        const growthRate = lastCount === 0 ? 100 : ((currentCount - lastCount) / lastCount) * 100;
-        setGrowth(Math.round(growthRate));
-        setGrowthDirection(growthRate >= 0 ? 'up' : 'down');
-      } catch (err) {
-        console.error('Error fetching growth:', err);
-        setMemberCount(0);
-        setGrowth(0);
-        setGrowthDirection(null);
-      }
-    };
-
-    fetchStats();
-  }, [user]);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <Header />
@@ -84,80 +18,60 @@ const ManagerDashboard = () => {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-              <p className="text-gray-600">
-                Regional management and oversight for <strong>{region}</strong>
-              </p>
+              <p className="text-gray-600">Manage your region operations</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Members Card */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Members in {region}</CardTitle>
+                  <CardTitle className="text-sm font-medium">Region Members</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    {memberCount !== null ? memberCount : '—'}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Active customers</p>
+                  <div className="text-2xl font-bold">312</div>
+                  <p className="text-xs text-muted-foreground">+5% from last month</p>
                 </CardContent>
               </Card>
 
-              {/* Check-ins Card */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Today's Check-ins</CardTitle>
+                  <CardTitle className="text-sm font-medium">Classes Today</CardTitle>
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">89</div>
-                  <p className="text-xs text-muted-foreground">Peak hours: 6–8 PM</p>
+                  <div className="text-2xl font-bold">8</div>
+                  <p className="text-xs text-muted-foreground">2 pending approval</p>
                 </CardContent>
               </Card>
 
-              {/* Revenue Card */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Revenue in {region}</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
+                  <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$12,450</div>
-                  <p className="text-xs text-muted-foreground">+8% from last month</p>
+                  <div className="text-2xl font-bold">85%</div>
+                  <p className="text-xs text-muted-foreground">+3% this week</p>
                 </CardContent>
               </Card>
 
-              {/* Growth Card */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Growth in {region}</CardTitle>
-                  {growthDirection === 'up' ? (
-                    <TrendingUp className="h-4 w-4 text-green-500" />
-                  ) : growthDirection === 'down' ? (
-                    <TrendingDown className="h-4 w-4 text-red-500" />
-                  ) : (
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  )}
+                  <CardTitle className="text-sm font-medium">Region Revenue</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className={`text-2xl font-bold ${growthDirection === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                    {growth !== null ? (
-                      <CountUp end={Math.abs(growth)} duration={1.2} suffix="%" />
-                    ) : (
-                      'Loading...'
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Compared to last month</p>
+                  <div className="text-2xl font-bold">₹85,000</div>
+                  <p className="text-xs text-muted-foreground">This month</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Additional Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ClassScheduler />
-              <BookingRequests />
-            </div>
+            <UserManagement />
+            
+            <BookingRequests />
+            
+            <ClassScheduler />
           </div>
         </main>
       </div>
