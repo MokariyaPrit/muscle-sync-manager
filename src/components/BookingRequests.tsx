@@ -19,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Clock, Calendar } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface Booking {
   id: string;
@@ -36,8 +36,16 @@ const BookingRequests = () => {
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
 
+  console.log('BookingRequests - Current user:', user);
+  console.log('BookingRequests - Bookings:', bookings);
+
   const fetchBookings = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user, skipping booking fetch');
+      return;
+    }
+
+    console.log('Fetching bookings for user role:', user.role, 'region:', user.region);
 
     try {
       let q;
@@ -72,6 +80,7 @@ const BookingRequests = () => {
         } as Booking);
       });
 
+      console.log('Fetched bookings:', list);
       setBookings(list);
     } catch (err) {
       console.error('Failed to fetch bookings:', err);
@@ -115,63 +124,74 @@ const BookingRequests = () => {
   };
 
   useEffect(() => {
+    console.log('BookingRequests useEffect triggered, user:', user);
     fetchBookings();
   }, [user]);
+
+  if (!user) {
+    return <div>Loading user data...</div>;
+  }
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center">
           <Calendar className="w-5 h-5 mr-2" />
-          Class Booking Requests
+          Class Booking Requests ({bookings.length} requests)
         </CardTitle>
       </CardHeader>
       <CardContent className="h-[500px] overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Member</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Region</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {bookings.map(booking => (
-              <TableRow key={booking.id}>
-                <TableCell>{booking.memberName}</TableCell>
-                <TableCell>{booking.className}</TableCell>
-                <TableCell>{booking.date}</TableCell>
-                <TableCell>{booking.time}</TableCell>
-                <TableCell>{booking.region}</TableCell>
-                <TableCell>{getStatusBadge(booking.status)}</TableCell>
-                <TableCell>
-                  {booking.status === 'pending' && (
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={() => handleUpdate(booking.id, 'approved')}
-                      >
-                        <Check className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleUpdate(booking.id, 'rejected')}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
+        {bookings.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No booking requests found. Loading...
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Member</TableHead>
+                <TableHead>Class</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Time</TableHead>
+                <TableHead>Region</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {bookings.map(booking => (
+                <TableRow key={booking.id}>
+                  <TableCell>{booking.memberName}</TableCell>
+                  <TableCell>{booking.className}</TableCell>
+                  <TableCell>{booking.date}</TableCell>
+                  <TableCell>{booking.time}</TableCell>
+                  <TableCell>{booking.region}</TableCell>
+                  <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                  <TableCell>
+                    {booking.status === 'pending' && (
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => handleUpdate(booking.id, 'approved')}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleUpdate(booking.id, 'rejected')}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );

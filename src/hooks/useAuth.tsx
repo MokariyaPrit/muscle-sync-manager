@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/firebase';
@@ -21,32 +22,40 @@ interface AuthContextType {
   
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  const savedUser = localStorage.getItem('gym_user');
-  if (savedUser) {
-    setUser(JSON.parse(savedUser));
-    setIsAuthenticated(true);
-  }
+  console.log('AuthProvider state:', { user, isAuthenticated, loading });
 
-  const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
-    if (!firebaseUser) {
-      setUser(null);
-      setIsAuthenticated(false);
-      localStorage.removeItem('gym_user');
+  useEffect(() => {
+    const savedUser = localStorage.getItem('gym_user');
+    console.log('Saved user from localStorage:', savedUser);
+    
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      console.log('Parsed user:', parsedUser);
+      setUser(parsedUser);
+      setIsAuthenticated(true);
     }
-    setLoading(false); // ✅ Done checking auth
-  });
 
-  return () => unsubscribe();
-}, []);  
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+      console.log('Firebase auth state changed:', firebaseUser);
+      if (!firebaseUser) {
+        console.log('No firebase user, clearing state');
+        setUser(null);
+        setIsAuthenticated(false);
+        localStorage.removeItem('gym_user');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);  
 
   const login = async (email: string, password: string) => {
+    console.log('Login attempt for:', email);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
@@ -60,6 +69,7 @@ useEffect(() => {
         name: userData.name,
         region: userData.region,
       };
+      console.log('User logged in successfully:', fullUser);
       setUser(fullUser);
       setIsAuthenticated(true);
       localStorage.setItem('gym_user', JSON.stringify(fullUser));
@@ -68,20 +78,18 @@ useEffect(() => {
     }
   };
 
-
-
-const logout = async () => {
-  await signOut(auth);
-  setUser(null);
-  setIsAuthenticated(false);
-  localStorage.removeItem('gym_user');
-};
+  const logout = async () => {
+    console.log('Logging out user');
+    await signOut(auth);
+    setUser(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem('gym_user');
+  };
   
   return (
- <AuthContext.Provider value={{ user, login, logout, isAuthenticated, loading }}>
-  {children}
-</AuthContext.Provider>
-
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, loading }}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 

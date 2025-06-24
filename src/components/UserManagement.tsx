@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,8 +29,16 @@ export const UserManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  console.log('UserManagement - Current user:', currentUser);
+  console.log('UserManagement - Users list:', users);
+
   const fetchUsers = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('No current user, skipping fetch');
+      return;
+    }
+
+    console.log('Fetching users for role:', currentUser.role, 'region:', currentUser.region);
 
     try {
       let q;
@@ -60,6 +67,8 @@ export const UserManagement = () => {
           createdAt: userData.createdAt || ''
         } as User);
       });
+      
+      console.log('Fetched users:', usersList);
       setUsers(usersList);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -72,6 +81,7 @@ export const UserManagement = () => {
   };
 
   useEffect(() => {
+    console.log('UserManagement useEffect triggered, currentUser:', currentUser);
     fetchUsers();
   }, [currentUser]);
 
@@ -155,56 +165,66 @@ export const UserManagement = () => {
     }
   };
 
+  if (!currentUser) {
+    return <div>Loading user data...</div>;
+  }
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center">
           <Users className="w-5 h-5 mr-2" />
-          User Management
+          User Management ({users.length} users)
         </CardTitle>
       </CardHeader>
       <CardContent className="h-[500px] overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Region</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{getRoleBadge(user.role)}</TableCell>
-                <TableCell className="capitalize">{user.region}</TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEditUser(user)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    {currentUser?.role === 'admin' && user.id !== currentUser.id && (
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                        onClick={() => handleDeleteUser(user.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
+        {users.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No users found. Loading...
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Region</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{getRoleBadge(user.role)}</TableCell>
+                  <TableCell className="capitalize">{user.region}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditUser(user)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      {currentUser?.role === 'admin' && user.id !== currentUser.id && (
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => handleDeleteUser(user.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
 
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
