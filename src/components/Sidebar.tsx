@@ -19,10 +19,11 @@ import { useState } from "react"
 import UpgradePlanCard from "./UpgradePlanCard"
 
 const menuItems = [
-  { icon: BookCheckIcon, label: "BookClass", path: "/book-class", allowedRoles: ["admin", "manager", "customer"] },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", allowedRoles: ["admin", "manager", "customer"] },
+  { icon: Calendar, label: "Weekly Schedule", path: "/weekly-schedule", allowedRoles: ["admin", "manager", "customer"] },
   { icon: ArrowUp, label: "Payments", path: "/payments", allowedRoles: ["admin", "manager","customer"] },
   { icon: Users, label: "Members", path: "/members", allowedRoles: ["admin", "manager"] },
+  { icon: BookCheckIcon, label: "BookClass", path: "/book-class", allowedRoles: ["admin", "manager", "customer"] },
   { icon: Users, label: "BookingRequests", path: "/booking-requests", allowedRoles: ["admin", "manager"] },
   { icon: User, label: "Staff", path: "/staff", allowedRoles: ["admin"] },
   { icon: Calendar, label: "Attendance", path: "/attendance", allowedRoles: ["admin", "manager"] },
@@ -31,7 +32,7 @@ const menuItems = [
 ]
 
 export const Sidebar = () => {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(false) 
   const location = useLocation()
   const { user } = useAuth()
 

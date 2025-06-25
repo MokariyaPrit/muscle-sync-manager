@@ -28,6 +28,7 @@ import BookClass from "./components/BookClass"
 import BookingRequests from "./components/BookingRequests"
 import DashboardRedirect from "./pages/DashboardRedirect"
 import PaymentHistory from "./pages/PaymentHistory"
+import WeeklySchedule from "./pages/WeeklySchedule"
 
 const queryClient = new QueryClient()
 
@@ -195,6 +196,17 @@ const App: React.FC = () => {
                     <ProtectedRoute allowedRoles={["admin", "manager", "customer"]}>
                       <DashboardLayout>
                         <BookClass />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                    <Route
+                  path="/weekly-schedule"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager", "customer"]}>
+                      <DashboardLayout>
+                        <WeeklySchedule />
                       </DashboardLayout>
                     </ProtectedRoute>
                   }
