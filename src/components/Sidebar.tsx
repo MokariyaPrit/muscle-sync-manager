@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useState } from "react"
+import UpgradePlanCard from "./UpgradePlanCard"
 
 const menuItems = [
   { icon: BookCheckIcon, label: "BookClass", path: "/book-class", allowedRoles: ["admin", "manager", "customer"] },
@@ -86,20 +87,7 @@ export const Sidebar = () => {
 
         {/* Upgrade Section */}
         {!collapsed && (
-          <div className="pt-6 mt-6 border-t border-border">
-            <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20">
-              <h3 className="font-semibold text-foreground mb-2">Upgrade Plan</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Get access to premium features and unlimited regions.
-              </p>
-              <Button
-                size="sm"
-                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-              >
-                Upgrade Now
-              </Button>
-            </div>
-          </div>
+         <UpgradePlanCard />
         )}
       </nav>
     </aside>

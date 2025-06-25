@@ -92,7 +92,6 @@ export const Header = () => {
           <div className="flex items-center space-x-2 ml-auto">
             {/* Theme Controls */}
             <div className="hidden sm:flex items-center space-x-2">
-              <ThemeSelector />
               <ThemeToggle />
             </div>
 

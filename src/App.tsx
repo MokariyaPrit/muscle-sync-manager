@@ -15,7 +15,7 @@ import Login from "./pages/Login"
 import AdminDashboard from "./pages/AdminDashboard"
 import CustomerDashboard from "./pages/CustomerDashboard"
 import ManagerDashboard from "./pages/ManagerDashboard"
-import Index from "./pages/Index"
+import Index from "./pages/DashboardRedirect"
 import Members from "./pages/Members"
 import Staff from "./pages/Staff"
 import Attendance from "./pages/Attendance"
@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound"
 import Signup from "./pages/Signup"
 import BookClass from "./components/BookClass"
 import BookingRequests from "./components/BookingRequests"
+import DashboardRedirect from "./pages/DashboardRedirect"
 
 const queryClient = new QueryClient()
 
@@ -104,7 +105,7 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute allowedRoles={["admin", "manager", "customer"]}>
                       <DashboardLayout>
-                        <Index />
+                        <DashboardRedirect />
                       </DashboardLayout>
                     </ProtectedRoute>
                   }
