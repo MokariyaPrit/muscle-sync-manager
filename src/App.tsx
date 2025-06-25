@@ -20,13 +20,14 @@ import Members from "./pages/Members"
 import Staff from "./pages/Staff"
 import Attendance from "./pages/Attendance"
 import Memberships from "./pages/Memberships"
-import Payments from "./pages/Payments"
+import Payments from "./pages/PaymentHistory"
 import Reports from "./pages/Reports"
 import NotFound from "./pages/NotFound"
 import Signup from "./pages/Signup"
 import BookClass from "./components/BookClass"
 import BookingRequests from "./components/BookingRequests"
 import DashboardRedirect from "./pages/DashboardRedirect"
+import PaymentHistory from "./pages/PaymentHistory"
 
 const queryClient = new QueryClient()
 
@@ -167,12 +168,12 @@ const App: React.FC = () => {
                 />
 
                 <Route
-                  path="/payments"
+                  path="/Payments"    
                   element={
-                    <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                    <ProtectedRoute allowedRoles={["admin", "manager","customer"]}>
                       <DashboardLayout>
-                        <Payments />
-                      </DashboardLayout>
+                        <PaymentHistory />
+                      </DashboardLayout>  
                     </ProtectedRoute>
                   }
                 />

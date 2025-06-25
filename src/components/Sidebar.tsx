@@ -21,12 +21,12 @@ import UpgradePlanCard from "./UpgradePlanCard"
 const menuItems = [
   { icon: BookCheckIcon, label: "BookClass", path: "/book-class", allowedRoles: ["admin", "manager", "customer"] },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", allowedRoles: ["admin", "manager", "customer"] },
+  { icon: ArrowUp, label: "Payments", path: "/payments", allowedRoles: ["admin", "manager","customer"] },
   { icon: Users, label: "Members", path: "/members", allowedRoles: ["admin", "manager"] },
   { icon: Users, label: "BookingRequests", path: "/booking-requests", allowedRoles: ["admin", "manager"] },
   { icon: User, label: "Staff", path: "/staff", allowedRoles: ["admin"] },
   { icon: Calendar, label: "Attendance", path: "/attendance", allowedRoles: ["admin", "manager"] },
-  { icon: Check, label: "Memberships", path: "/memberships", allowedRoles: ["admin", "manager"] },
-  { icon: ArrowUp, label: "Payments", path: "/payments", allowedRoles: ["admin", "manager"] },
+  { icon: Check, label: "Memberships", path: "/memberships", allowedRoles: ["admin", "manager"] }, 
   { icon: ArrowDown, label: "Reports", path: "/reports", allowedRoles: ["admin", "manager"] },
 ]
 

@@ -8,7 +8,8 @@ import {
   getDocs,
   addDoc,
   deleteDoc,
-  doc
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import {
   Card, CardHeader, CardTitle, CardContent
@@ -40,7 +41,22 @@ const BookClass = () => {
   const [userBookings, setUserBookings] = useState<Set<string>>(new Set());
   const [userBookingStatus, setUserBookingStatus] = useState<Record<string, string>>({});
   const [userBookingDocIds, setUserBookingDocIds] = useState<Record<string, string>>({});
+  const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const checkMembership = async () => {
+      if (!user?.id) return;
+      const snap = await getDoc(doc(db, "memberships", user.id));
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.status === "active" && new Date(data.expiry.toDate?.() || data.expiry) > new Date()) {
+          setIsPremium(true);
+        }
+      }
+    };
+    checkMembership();
+  }, [user]);
 
   useEffect(() => {
     if (!user?.region) return;
@@ -50,17 +66,16 @@ const BookClass = () => {
       const snapshot = await getDocs(q);
       const classList: ClassItem[] = [];
       snapshot.forEach(doc => {
-       const data = doc.data();
-    classList.push({
-  id: doc.id,
-  name: data.name,
-  instructor: data.instructor,
-  date: data.date?.toDate?.().toLocaleDateString() ?? '',
-  time: data.time,
-  region: data.region,
-  capacity: data.capacity
-    });
-
+        const data = doc.data();
+        classList.push({
+          id: doc.id,
+          name: data.name,
+          instructor: data.instructor,
+          date: data.date?.toDate?.().toLocaleDateString() ?? '',
+          time: data.time,
+          region: data.region,
+          capacity: data.capacity
+        });
       });
       setClasses(classList);
     };
@@ -134,6 +149,8 @@ const BookClass = () => {
     try {
       setLoading(true);
 
+      const status = isPremium ? 'approved' : 'pending';
+
       await addDoc(collection(db, 'bookings'), {
         userId: user.id,
         memberName: user.name,
@@ -142,17 +159,17 @@ const BookClass = () => {
         date: cls.date,
         time: cls.time,
         region: cls.region,
-        status: 'pending',
+        status,
         createdAt: new Date().toISOString()
       });
 
       toast({
-        title: 'Booking Sent',
-        description: `Your request for ${cls.name} has been sent.`,
+        title: isPremium ? 'Booking Confirmed' : 'Booking Sent',
+        description: `Your booking for ${cls.name} has been ${status}.`,
       });
 
       setUserBookings(prev => new Set(prev).add(cls.id));
-      setUserBookingStatus(prev => ({ ...prev, [cls.id]: 'pending' }));
+      setUserBookingStatus(prev => ({ ...prev, [cls.id]: status }));
     } catch (error) {
       console.error('Booking error:', error);
       toast({
@@ -259,4 +276,5 @@ const BookClass = () => {
   );
 };
 
-export default BookClass;    
+export default BookClass;
+   

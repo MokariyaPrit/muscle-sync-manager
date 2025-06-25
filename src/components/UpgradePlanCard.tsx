@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { openRazorpay } from "@/utils/razorpay"
 import { useAuth } from "@/hooks/useAuth"
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
+import { doc, getDoc, setDoc, serverTimestamp, collection, addDoc } from "firebase/firestore"
 import { db } from "@/firebase"
 import { toast } from "sonner"
 
@@ -19,11 +19,12 @@ const UpgradePlanCard = () => {
       const snap = await getDoc(docRef)
       if (snap.exists()) {
         const data = snap.data()
-        if (data.status === "active" && new Date(data.expiry.toDate?.() || data.expiry) > new Date()) {
+        const expiry = data.expiry?.toDate?.() || new Date(data.expiry)
+        if (data.status === "active" && expiry > new Date()) {
           setIsMember(true)
         }
       }
-    }  
+    }
 
     checkMembership()
   }, [user])
@@ -40,16 +41,24 @@ const UpgradePlanCard = () => {
       description: "Access to premium features and unlimited regions",
       email: user.email,
       onSuccess: async (response) => {
+        const expiryDate = new Date(new Date().setMonth(new Date().getMonth() + 1))
+
+        const membershipData = {
+          userId: user.id,
+          email: user.email,
+          status: "active",
+          paymentId: response.razorpay_payment_id,
+          upgradedAt: serverTimestamp(),
+          plan: "Premium",
+          expiry: expiryDate
+        }
+
         try {
-          await setDoc(doc(db, "memberships", user.id), {
-            userId: user.id,
-            email: user.email,
-            status: "active",
-            paymentId: response.razorpay_payment_id,
-            upgradedAt: serverTimestamp(),
-            plan: "Premium",
-            expiry: new Date(new Date().setMonth(new Date().getMonth() + 1))
-          })
+          // Save to latest
+          await setDoc(doc(db, "memberships", user.id), membershipData)
+
+          // Save to history
+          await addDoc(collection(db, "memberships", user.id, "history"), membershipData)
 
           toast.success("Membership activated successfully!")
           setIsMember(true)
@@ -66,7 +75,9 @@ const UpgradePlanCard = () => {
       <div className="pt-6 mt-6 border-t border-border">
         <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-lg border border-green-300 dark:border-green-800">
           <h3 className="font-semibold text-green-700 dark:text-green-300 mb-1">You're a Premium Member!</h3>
-          <p className="text-sm text-green-600 dark:text-green-400">Enjoy all premium benefits and unlimited regions.</p>
+          <p className="text-sm text-green-600 dark:text-green-400">
+            Enjoy all premium benefits and unlimited regions.
+          </p>
         </div>
       </div>
     )
