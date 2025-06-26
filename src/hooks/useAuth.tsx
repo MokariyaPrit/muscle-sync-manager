@@ -10,6 +10,8 @@ interface User {
   role: 'admin' | 'manager' | 'customer';
   name: string;
   region: string;
+  profileUrl?: string;
+  phone?: string;
 }
 
 interface AuthContextType {
@@ -29,30 +31,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // console.log('AuthProvider state:', { user, isAuthenticated, loading });
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('gym_user');
-    // console.log('Saved user from localStorage:', savedUser);
-    
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      // console.log('Parsed user:', parsedUser);
-      setUser(parsedUser);
-      setIsAuthenticated(true);
-    }
+useEffect(() => {
+  const savedUser = localStorage.getItem('gym_user');
+  if (savedUser) {
+    const parsedUser = JSON.parse(savedUser);
+    setUser(parsedUser);
+    setIsAuthenticated(true);
+  }
 
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
-      // console.log('Firebase auth state changed:', firebaseUser);
-      if (!firebaseUser) {
-        console.log('No firebase user, clearing state');
-        setUser(null);
-        setIsAuthenticated(false);
-        localStorage.removeItem('gym_user');
+  const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+    if (!firebaseUser) {
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('gym_user');
+    } else {
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const fullUser: User = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          role: userData.role,
+          name: userData.name,
+          region: userData.region,
+          profileUrl: userData?.profileUrl || "",
+          phone:userData?.phone || ""
+        
+        };
+        setUser(fullUser);
+        setIsAuthenticated(true);
+        localStorage.setItem('gym_user', JSON.stringify(fullUser));
       }
-      setLoading(false);
-    });
+    }
+    setLoading(false);
+  });
 
-    return () => unsubscribe();
-  }, []);  
+  return () => unsubscribe();
+}, []);
+
 
   const login = async (email: string, password: string) => {
     console.log('Login attempt for:', email);
@@ -68,6 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: userData.role,
         name: userData.name,
         region: userData.region,
+        profileUrl: userData?.profileUrl || "" ,
+         phone:userData?.phone || "",
       };
       console.log('User logged in successfully:', fullUser);
       setUser(fullUser);

@@ -29,6 +29,7 @@ import BookingRequests from "./components/BookingRequests"
 import DashboardRedirect from "./pages/DashboardRedirect"
 import PaymentHistory from "./pages/PaymentHistory"
 import WeeklySchedule from "./pages/WeeklySchedule"
+import ProfileUpdate from "./pages/ProfileUpdate"
 
 const queryClient = new QueryClient()
 
@@ -207,6 +208,16 @@ const App: React.FC = () => {
                     <ProtectedRoute allowedRoles={["admin", "manager", "customer"]}>
                       <DashboardLayout>
                         <WeeklySchedule />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                    <Route
+                  path="/ProfileUpdate"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager", "customer"]}>
+                      <DashboardLayout>
+                        <ProfileUpdate />
                       </DashboardLayout>
                     </ProtectedRoute>
                   }
