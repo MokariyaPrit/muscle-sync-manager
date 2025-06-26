@@ -22,7 +22,7 @@ const Signup = () => {
     name: "",
     password: "",
     confirmPassword: "",
-    role: "",
+    role: "customer",
     region: "",
   })
   const [showPassword, setShowPassword] = useState(false)
@@ -92,7 +92,7 @@ const Signup = () => {
       await setDoc(doc(db, "users", user.uid), {
         email: formData.email,
         name: formData.name,
-        role: normalizedRole,
+        role: "customer",
         region: normalizedRegion,
         createdAt: new Date().toISOString(),
       })
@@ -265,7 +265,7 @@ const Signup = () => {
               {/* Step 3: Role and Region */}
               {step === 3 && (
                 <div className="space-y-4 animate-fade-in">
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label className="text-sm font-medium">Role</Label>
                     <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)}>
                       <SelectTrigger className="h-12 bg-background/50 border-border focus:border-primary">
@@ -295,8 +295,12 @@ const Signup = () => {
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-
+                  </div> */}
+{/* 
+<div className="space-y-2">
+  <Label className="text-sm font-medium">Role</Label>
+  <Input value="Customer" readOnly className="bg-muted cursor-not-allowed" />
+</div> */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Region</Label>
                     <Select value={formData.region} onValueChange={(value) => handleInputChange("region", value)}>

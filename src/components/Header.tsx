@@ -95,12 +95,7 @@ export const Header = () => {
               <ThemeToggle />
             </div>
 
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">
-                3
-              </span>
-            </Button>
+           
 
             {/* Avatar Dropdown */}
             <DropdownMenu>
@@ -137,14 +132,10 @@ export const Header = () => {
                 </div>
 
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
-                  <User className="mr-2 h-4 w-4" />
-                  <span onClick={handleprofilebuttonclick}>Profile Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                  <Bell className="mr-2 h-4 w-4" />
-                  <span>Notifications</span>
-                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer" onClick={handleprofilebuttonclick}>
+                  <User className="mr-2 h-4 w-4"  />
+                  <span >Profile Settings</span> 
+                </DropdownMenuItem>  
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"

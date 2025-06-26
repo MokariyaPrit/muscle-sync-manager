@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Users } from 'lucide-react';
+import { Calendar, Clock, MapPin, MapPinCheckInsideIcon, Users } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 interface ClassItem {
@@ -59,29 +59,51 @@ const BookClass = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!user?.region) return;
+  if (!user?.region) return;
 
-    const fetchClasses = async () => {
-      const q = query(collection(db, 'classes'), where('region', '==', user.region));
-      const snapshot = await getDocs(q);
-      const classList: ClassItem[] = [];
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        classList.push({
-          id: doc.id,
-          name: data.name,
-          instructor: data.instructor,
-          date: data.date?.toDate?.().toLocaleDateString() ?? '',
-          time: data.time,
-          region: data.region,
-          capacity: data.capacity
-        });
+  const fetchClasses = async () => {
+    const regionQuery = query(collection(db, "classes"), where("region", "==", user.region));
+    const allQuery = query(collection(db, "classes"), where("region", "==", "all"));
+
+    const [regionSnap, allSnap] = await Promise.all([
+      getDocs(regionQuery),
+      getDocs(allQuery),
+    ]);
+
+    const classList: ClassItem[] = [];
+
+    regionSnap.forEach((doc) => {
+      const data = doc.data();
+      classList.push({
+        id: doc.id,
+        name: data.name,
+        instructor: data.instructor,
+        date: data.date?.toDate?.().toLocaleDateString() ?? "",
+        time: data.time,
+        region: data.region,
+        capacity: data.capacity,
       });
-      setClasses(classList);
-    };
+    });
 
-    fetchClasses();
-  }, [user]);
+    allSnap.forEach((doc) => {
+      const data = doc.data() as any;
+      classList.push({
+        id: doc.id,
+        name: data.name,
+        instructor: data.instructor,
+        date: data.date?.toDate?.().toLocaleDateString() ?? "",
+        time: data.time,
+        region: data.region,
+        capacity: data.capacity,
+      });
+    });
+
+    setClasses(classList);
+  };
+
+  fetchClasses();
+}, [user]);
+  
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -217,6 +239,7 @@ const BookClass = () => {
           <TableHead>Date</TableHead>
           <TableHead>Time</TableHead>
           <TableHead>Availability</TableHead>
+          <TableHead>Region</TableHead>
           <TableHead className="text-center">Action</TableHead>
         </TableRow>
       </TableHeader>
@@ -238,6 +261,7 @@ const BookClass = () => {
                   {cls.time}
                 </div>
               </TableCell>
+             
               <TableCell>
                 <div className="flex items-center gap-2">
                   {getAvailabilityBadge(approved, capacity)}
@@ -245,6 +269,12 @@ const BookClass = () => {
                     <Users className="w-3 h-3" />
                     {approved}/{capacity}
                   </span>
+                </div>
+              </TableCell>
+               <TableCell>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  {cls.region}
                 </div>
               </TableCell>
               <TableCell className="text-center">

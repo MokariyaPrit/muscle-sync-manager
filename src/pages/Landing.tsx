@@ -1,5 +1,5 @@
 "use client"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,8 +20,22 @@ import {
   TrendingUp,
   Play,
 } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
+import { useEffect } from "react"
 
 const Landing = () => {
+
+   const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/dashboard");
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) return null
+
   const features = [
     {
       icon: <Users className="w-8 h-8" />,
