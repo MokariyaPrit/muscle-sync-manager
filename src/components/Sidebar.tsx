@@ -24,13 +24,10 @@ const menuItems = [
   { icon: Calendar, label: "Weekly Schedule", path: "/weekly-schedule", allowedRoles: ["admin", "manager", "customer"] },
   { icon: ArrowUp, label: "Payments", path: "/payments", allowedRoles: ["admin", "manager","customer"] },
   { icon: LucideUserRoundCog, label: "Profile Update", path: "/ProfileUpdate", allowedRoles: ["admin", "manager","customer"] },
+  { icon: LucideUserRoundCog, label: "plans", path: "/plans", allowedRoles: ["admin", "manager","customer"] },
+  { icon: BookCheckIcon, label: "BookClass", path: "/book-class", allowedRoles: ["customer"] },
   { icon: Users, label: "Members", path: "/members", allowedRoles: ["admin", "manager"] },
-  { icon: BookCheckIcon, label: "BookClass", path: "/book-class", allowedRoles: ["admin", "manager", "customer"] },
   { icon: Users, label: "BookingRequests", path: "/booking-requests", allowedRoles: ["admin", "manager"] },
-  { icon: User, label: "Staff", path: "/staff", allowedRoles: ["admin"] },
-  { icon: Calendar, label: "Attendance", path: "/attendance", allowedRoles: ["admin", "manager"] },
-  { icon: Check, label: "Memberships", path: "/memberships", allowedRoles: ["admin", "manager"] }, 
-  { icon: ArrowDown, label: "Reports", path: "/reports", allowedRoles: ["admin", "manager"] },
 ]
 
 export const Sidebar = () => {

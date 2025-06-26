@@ -201,78 +201,86 @@ const BookClass = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Calendar className="w-5 h-5 mr-2" />
-          Book Classes ({user?.region})
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Class</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Availability</TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {classes.map(cls => {
-              const approved = approvedCounts[cls.id] ?? 0;
-              const capacity = cls.capacity ?? 20;
-              const alreadyBooked = userBookings.has(cls.id);
-              const status = userBookingStatus[cls.id];
-              return (
-                <TableRow key={cls.id}>
-                  <TableCell className="font-medium">{cls.name}</TableCell>
-                  <TableCell>{cls.date}</TableCell>
-                  <TableCell className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" /> {cls.time}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      {getAvailabilityBadge(approved, capacity)}
-                      <span className="text-sm text-gray-500 flex items-center">
-                        <Users className="w-3 h-3 mr-1" />
-                        {approved}/{capacity}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {alreadyBooked ? (
-                      <div className="flex flex-col space-y-1">
-                        {renderStatusBadge(status)}
-                        {status === 'pending' && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleCancelBooking(cls.id)}
-                          >
-                            Cancel
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
+    <Card className="shadow-lg border rounded-xl">
+  <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-t-xl px-6 py-4">
+    <CardTitle className="flex items-center gap-2 text-lg font-semibold text-primary">
+      <Calendar className="w-5 h-5" />
+      Book Classes ({user?.region})
+    </CardTitle>
+  </CardHeader>
+
+  <CardContent className="px-4 py-6">
+    <Table className="table-auto w-full text-sm">
+      <TableHeader>
+        <TableRow className="bg-muted">
+          <TableHead>Class</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead>Time</TableHead>
+          <TableHead>Availability</TableHead>
+          <TableHead className="text-center">Action</TableHead>
+        </TableRow>
+      </TableHeader>
+
+      <TableBody>
+        {classes.map((cls) => {
+          const approved = approvedCounts[cls.id] ?? 0;
+          const capacity = cls.capacity ?? 20;
+          const alreadyBooked = userBookings.has(cls.id);
+          const status = userBookingStatus[cls.id];
+
+          return (
+            <TableRow key={cls.id} className="hover:bg-muted/50">
+              <TableCell className="font-medium text-foreground">{cls.name}</TableCell>
+              <TableCell>{cls.date}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  {cls.time}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  {getAvailabilityBadge(approved, capacity)}
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    {approved}/{capacity}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell className="text-center">
+                {alreadyBooked ? (
+                  <div className="flex flex-col items-center gap-1">
+                    {renderStatusBadge(status)}
+                    {status === "pending" && (
                       <Button
                         size="sm"
-                        disabled={loading || approved >= capacity}
-                        onClick={() => handleBookClass(cls)}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        variant="outline"
+                        className="text-red-600 border-red-200 hover:bg-red-100"
+                        onClick={() => handleCancelBooking(cls.id)}
                       >
-                        Book
+                        Cancel
                       </Button>
                     )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    disabled={loading || approved >= capacity}
+                    onClick={() => handleBookClass(cls)}
+                    className="bg-primary hover:bg-primary/90 text-white"
+                  >
+                    Book
+                  </Button>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  </CardContent>
+</Card>
+
   );
 };
 

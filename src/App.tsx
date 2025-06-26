@@ -30,6 +30,9 @@ import DashboardRedirect from "./pages/DashboardRedirect"
 import PaymentHistory from "./pages/PaymentHistory"
 import WeeklySchedule from "./pages/WeeklySchedule"
 import ProfileUpdate from "./pages/ProfileUpdate"
+import PlansPage from "./pages/PlansPage"
+import UpgradePlanCard from "./components/UpgradePlanCard"
+import './App.css'
 
 const queryClient = new QueryClient()
 
@@ -219,6 +222,26 @@ const App: React.FC = () => {
                       <DashboardLayout>
                         <ProfileUpdate />
                       </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                    <Route
+                  path="/plans"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager", "customer"]}>
+                      <DashboardLayout>
+                        <PlansPage />
+                      </DashboardLayout> 
+                    </ProtectedRoute>
+                  }
+                />
+                    <Route
+                  path="/upgrade"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "manager", "customer"]}>
+                      <DashboardLayout>  
+                        <UpgradePlanCard />
+                      </DashboardLayout> 
                     </ProtectedRoute>
                   }
                 />
