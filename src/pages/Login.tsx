@@ -192,21 +192,21 @@ const Login = () => {
           <CardContent className="pt-6">
             <h3 className="font-semibold text-sm mb-3 text-center">Demo Credentials</h3>
             <div className="grid grid-cols-1 gap-2 text-xs">
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span className="text-muted-foreground">Admin:</span>
                 <span className="font-mono">admin@fitzone.com</span>
-              </div>
+              </div> */}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Manager:</span>
-                <span className="font-mono">manager@fitzone.com</span>
+                <span className="font-mono">manager@gmail.com</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Customer:</span>
-                <span className="font-mono">customer@fitzone.com</span>
+                <span className="font-mono">user1@gmail.com</span>
               </div>
               <div className="flex justify-between pt-1 border-t border-border">
                 <span className="text-muted-foreground">Password:</span>
-                <span className="font-mono">password123</span>
+                <span className="font-mono">123456</span>
               </div>
             </div>
           </CardContent>
